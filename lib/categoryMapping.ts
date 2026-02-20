@@ -1,0 +1,85 @@
+import type { EventCategory } from "@/types";
+
+const EVENTBRITE_CATEGORY_MAP: Record<string, EventCategory> = {
+  "103": "concert",      // Music
+  "104": "art",           // Film & Media
+  "105": "art",           // Performing & Visual Arts
+  "106": "other",         // Fashion
+  "107": "other",         // Health
+  "108": "sports",        // Sports & Fitness
+  "109": "other",         // Travel & Outdoor
+  "110": "food_drink",    // Food & Drink
+  "111": "other",         // Charity & Causes
+  "112": "other",         // Government & Politics
+  "113": "other",         // Community & Culture
+  "114": "other",         // Religion & Spirituality
+  "115": "family",        // Family & Education
+  "116": "other",         // Seasonal & Holiday
+  "117": "other",         // Business & Professional
+  "118": "other",         // Science & Technology
+  "119": "nightlife",     // Nightlife (custom/rare)
+  "199": "other",         // Other
+};
+
+const TICKETMASTER_SEGMENT_MAP: Record<string, EventCategory> = {
+  "Music": "concert",
+  "Sports": "sports",
+  "Arts & Theatre": "art",
+  "Film": "art",
+  "Miscellaneous": "other",
+  "Undefined": "other",
+};
+
+const TICKETMASTER_GENRE_MAP: Record<string, EventCategory> = {
+  "Club": "nightlife",
+  "Dance/Electronic": "nightlife",
+  "DJ": "nightlife",
+  "Rock": "concert",
+  "Pop": "concert",
+  "Hip-Hop/Rap": "concert",
+  "R&B": "concert",
+  "Jazz": "concert",
+  "Classical": "concert",
+  "Metal": "concert",
+  "Alternative": "concert",
+  "Folk": "concert",
+  "Country": "concert",
+  "Latin": "concert",
+  "Reggae": "concert",
+  "Blues": "concert",
+  "World": "concert",
+  "Comedy": "art",
+  "Theatre": "art",
+  "Opera": "art",
+  "Dance": "art",
+  "Circus & Specialty Acts": "family",
+  "Fairs & Festivals": "festival",
+  "Festival": "festival",
+  "Food & Drink": "food_drink",
+  "Family": "family",
+  "Soccer": "sports",
+  "Football": "sports",
+  "Basketball": "sports",
+  "Ice Hockey": "sports",
+  "Tennis": "sports",
+  "Boxing": "sports",
+  "Motorsports/Racing": "sports",
+};
+
+export function mapEventbriteCategory(categoryId: string | null | undefined): EventCategory {
+  if (!categoryId) return "other";
+  return EVENTBRITE_CATEGORY_MAP[categoryId] ?? "other";
+}
+
+export function mapTicketmasterSegment(
+  segmentName: string | null | undefined,
+  genreName: string | null | undefined
+): EventCategory {
+  if (genreName && TICKETMASTER_GENRE_MAP[genreName]) {
+    return TICKETMASTER_GENRE_MAP[genreName];
+  }
+  if (segmentName && TICKETMASTER_SEGMENT_MAP[segmentName]) {
+    return TICKETMASTER_SEGMENT_MAP[segmentName];
+  }
+  return "other";
+}

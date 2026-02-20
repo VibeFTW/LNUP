@@ -2,10 +2,12 @@ import { View, Text, FlatList, RefreshControl, TouchableOpacity } from "react-na
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useMemo, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { EventCard } from "@/components/EventCard";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { DateFilter } from "@/components/DateFilter";
 import { CitySelector } from "@/components/CitySelector";
+import { SearchOverlay } from "@/components/SearchOverlay";
 import { useEventStore } from "@/stores/eventStore";
 import { useFilterStore } from "@/stores/filterStore";
 import { matchesDateFilter } from "@/lib/utils";
@@ -14,6 +16,7 @@ import type { EventCategory } from "@/types";
 
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const events = useEventStore((s) => s.events);
   const fetchEvents = useEventStore((s) => s.fetchEvents);
   const toggleGoing = useEventStore((s) => s.toggleGoing);
@@ -22,6 +25,7 @@ export default function FeedScreen() {
     useFilterStore();
   const [refreshing, setRefreshing] = useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
 
   const activeEvents = useMemo(() => {
     return events.filter((e) => e.status === "active");
@@ -59,14 +63,28 @@ export default function FeedScreen() {
         </Text>
         <View className="flex-row items-center justify-between">
           <Text className="text-2xl font-bold text-text-primary">LNUP</Text>
-          <TouchableOpacity
-            onPress={() => setCityModalVisible(true)}
-            className="flex-row items-center gap-1 bg-card rounded-full px-3 py-1.5 border border-border"
-          >
-            <Ionicons name="location" size={12} color="#6C5CE7" />
-            <Text className="text-xs text-text-secondary">{city}</Text>
-            <Ionicons name="chevron-down" size={12} color="#6B6B80" />
-          </TouchableOpacity>
+          <View className="flex-row items-center gap-2">
+            <TouchableOpacity
+              onPress={() => setSearchVisible(true)}
+              className="w-9 h-9 rounded-full bg-card border border-border items-center justify-center"
+            >
+              <Ionicons name="search" size={16} color="#A0A0B8" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/leaderboard")}
+              className="w-9 h-9 rounded-full bg-card border border-border items-center justify-center"
+            >
+              <Ionicons name="trophy" size={16} color="#FFC107" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setCityModalVisible(true)}
+              className="flex-row items-center gap-1 bg-card rounded-full px-3 py-1.5 border border-border"
+            >
+              <Ionicons name="location" size={12} color="#6C5CE7" />
+              <Text className="text-xs text-text-secondary">{city}</Text>
+              <Ionicons name="chevron-down" size={12} color="#6B6B80" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -121,6 +139,12 @@ export default function FeedScreen() {
       <CitySelector
         visible={cityModalVisible}
         onClose={() => setCityModalVisible(false)}
+      />
+
+      {/* Search Overlay */}
+      <SearchOverlay
+        visible={searchVisible}
+        onClose={() => setSearchVisible(false)}
       />
     </View>
   );

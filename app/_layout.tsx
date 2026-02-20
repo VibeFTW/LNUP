@@ -27,6 +27,10 @@ export default function RootLayout() {
           name="event/[id]"
           options={{ headerShown: false, presentation: "card" }}
         />
+        <Stack.Screen
+          name="leaderboard"
+          options={{ headerShown: false, presentation: "card" }}
+        />
       </Stack>
     </>
   );

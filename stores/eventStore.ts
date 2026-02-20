@@ -1,16 +1,19 @@
 import { create } from "zustand";
 import type { Event } from "@/types";
 import { MOCK_EVENTS } from "@/lib/mockData";
+import { fetchExternalEvents } from "@/lib/eventApis";
+import { EVENTBRITE_API_KEY, TICKETMASTER_API_KEY } from "@/lib/constants";
 
 interface EventState {
   events: Event[];
   savedEventIds: Set<string>;
   goingEventIds: Set<string>;
   isLoading: boolean;
-  fetchEvents: () => Promise<void>;
+  fetchEvents: (city?: string) => Promise<void>;
   toggleSave: (eventId: string) => void;
   toggleGoing: (eventId: string) => void;
   confirmAttended: (eventId: string) => void;
+  mergeExternalEvents: (externalEvents: Event[]) => void;
   getEventById: (id: string) => Event | undefined;
   getSavedEvents: () => Event[];
   getEventsByCreator: (userId: string) => Event[];
@@ -22,10 +25,23 @@ export const useEventStore = create<EventState>((set, get) => ({
   goingEventIds: new Set(["e2"]),
   isLoading: false,
 
-  fetchEvents: async () => {
+  fetchEvents: async (city?: string) => {
     set({ isLoading: true });
+
+    // TODO: Replace with Supabase query
     await new Promise((r) => setTimeout(r, 300));
-    set({ events: MOCK_EVENTS, isLoading: false });
+
+    const hasApiKeys = EVENTBRITE_API_KEY || TICKETMASTER_API_KEY;
+    if (hasApiKeys && city) {
+      try {
+        const externalEvents = await fetchExternalEvents(city);
+        get().mergeExternalEvents(externalEvents);
+      } catch (error) {
+        console.warn("External event fetch failed:", error);
+      }
+    }
+
+    set({ isLoading: false });
   },
 
   toggleSave: (eventId) => {
@@ -82,6 +98,15 @@ export const useEventStore = create<EventState>((set, get) => ({
           : e
       ),
     }));
+  },
+
+  mergeExternalEvents: (externalEvents) => {
+    set((state) => {
+      const existingIds = new Set(state.events.map((e) => e.id));
+      const newEvents = externalEvents.filter((e) => !existingIds.has(e.id));
+      if (newEvents.length === 0) return state;
+      return { events: [...state.events, ...newEvents] };
+    });
   },
 
   getEventById: (id) => get().events.find((e) => e.id === id),
