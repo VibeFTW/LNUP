@@ -1,5 +1,7 @@
 # LNUP — Local Nights, Unique Places
 
+> **LNUP** wird ausgesprochen wie **"Lineup"** — dein Lineup für heute Abend.
+
 **LNUP** ist eine mobile App, die dir zeigt, was in deiner Stadt los ist — heute Abend, dieses Wochenende oder nächste Woche. Clubs, Restaurants, Konzerte, Festivals, Sport-Events — alles an einem Ort, ohne Algorithmus und ohne dich durch zehn verschiedene Plattformen klicken zu müssen.
 
 ## Das Problem
