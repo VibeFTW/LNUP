@@ -1,7 +1,8 @@
+import { useRef, useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, withSequence } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { TrustBadge } from "./TrustBadge";
 import { RankBadge } from "./RankBadge";
@@ -29,10 +30,19 @@ export function EventCard({ event, onToggleGoing, isGoing }: EventCardProps) {
   const toggleSave = useEventStore((s) => s.toggleSave);
   const savedIds = useEventStore((s) => s.savedEventIds);
   const isSaved = savedIds.has(event.id);
+  const lastTap = useRef(0);
+  const tapTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [showDoubleTapOverlay, setShowDoubleTapOverlay] = useState(false);
 
   const scale = useSharedValue(1);
+  const overlayScale = useSharedValue(0);
+  const overlayOpacity = useSharedValue(0);
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
+  }));
+  const overlayStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: overlayScale.value }],
+    opacity: overlayOpacity.value,
   }));
 
   const onPressIn = () => {
@@ -42,17 +52,47 @@ export function EventCard({ event, onToggleGoing, isGoing }: EventCardProps) {
     scale.value = withSpring(1, { damping: 15, stiffness: 300 });
   };
 
+  const handlePress = () => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      if (tapTimeout.current) clearTimeout(tapTimeout.current);
+      if (onToggleGoing && !isGoing) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        onToggleGoing(event.id);
+        setShowDoubleTapOverlay(true);
+        overlayScale.value = withSequence(withTiming(1.2, { duration: 200 }), withTiming(1, { duration: 150 }));
+        overlayOpacity.value = withSequence(withTiming(1, { duration: 100 }), withTiming(0, { duration: 600 }));
+        setTimeout(() => setShowDoubleTapOverlay(false), 800);
+      }
+    } else {
+      tapTimeout.current = setTimeout(() => {
+        router.push(`/event/${event.id}`);
+      }, 300);
+    }
+    lastTap.current = now;
+  };
+
   const isPast = new Date(event.event_date) < new Date(new Date().toDateString());
 
   return (
     <AnimatedTouchable
-      onPress={() => router.push(`/event/${event.id}`)}
+      onPress={handlePress}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       activeOpacity={0.9}
       className="mx-4 mb-3 rounded-2xl bg-card border border-border overflow-hidden"
       style={animatedStyle}
     >
+      {/* Double-tap overlay */}
+      {showDoubleTapOverlay && (
+        <Animated.View
+          className="absolute inset-0 z-20 items-center justify-center"
+          style={[{ backgroundColor: "rgba(0,0,0,0.3)" }, overlayStyle]}
+          pointerEvents="none"
+        >
+          <Ionicons name="people" size={56} color="#00D2FF" />
+        </Animated.View>
+      )}
       {/* Cover Image / Category Gradient */}
       <EventCover category={event.category} imageUrl={event.image_url} />
 

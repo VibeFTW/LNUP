@@ -9,6 +9,8 @@ import { CategoryFilter } from "@/components/CategoryFilter";
 import { DateFilter } from "@/components/DateFilter";
 import { CitySelector } from "@/components/CitySelector";
 import { SearchOverlay } from "@/components/SearchOverlay";
+import { SortDropdown } from "@/components/SortDropdown";
+import { TrendingEvents } from "@/components/TrendingEvents";
 import { useEventStore } from "@/stores/eventStore";
 import { useFilterStore } from "@/stores/filterStore";
 import { matchesDateFilter } from "@/lib/utils";
@@ -23,24 +25,37 @@ export default function FeedScreen() {
   const fetchEvents = useEventStore((s) => s.fetchEvents);
   const toggleGoing = useEventStore((s) => s.toggleGoing);
   const goingIds = useEventStore((s) => s.goingEventIds);
-  const { dateFilter, categoryFilter, setDateFilter, setCategoryFilter, city } =
+  const { dateFilter, categoryFilter, setDateFilter, setCategoryFilter, city, sortBy } =
     useFilterStore();
   const [refreshing, setRefreshing] = useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
+  const [sortVisible, setSortVisible] = useState(false);
 
   const activeEvents = useMemo(() => {
     return events.filter((e) => e.status === "active");
   }, [events]);
 
   const filteredEvents = useMemo(() => {
-    return activeEvents.filter((event) => {
+    const filtered = activeEvents.filter((event) => {
       if (city && event.venue?.city && event.venue.city !== city) return false;
       if (!matchesDateFilter(event.event_date, dateFilter)) return false;
       if (categoryFilter && event.category !== categoryFilter) return false;
       return true;
     });
-  }, [activeEvents, dateFilter, categoryFilter, city]);
+
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "popular":
+          return b.going_count - a.going_count;
+        case "newest":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "date":
+        default:
+          return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+      }
+    });
+  }, [activeEvents, dateFilter, categoryFilter, city, sortBy]);
 
   const eventCounts = useMemo(() => {
     const counts: Partial<Record<EventCategory, number>> = {};
@@ -73,6 +88,12 @@ export default function FeedScreen() {
               className="w-9 h-9 rounded-full bg-card border border-border items-center justify-center"
             >
               <Ionicons name="search" size={16} color="#A0A0B8" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setSortVisible(true)}
+              className="w-9 h-9 rounded-full bg-card border border-border items-center justify-center"
+            >
+              <Ionicons name="swap-vertical" size={16} color={sortBy !== "date" ? "#6C5CE7" : "#A0A0B8"} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.push("/leaderboard")}
@@ -110,6 +131,7 @@ export default function FeedScreen() {
       <FlatList
         data={filteredEvents}
         keyExtractor={(item) => item.id}
+        ListHeaderComponent={<TrendingEvents events={filteredEvents} />}
         renderItem={({ item }) => (
           <EventCard
             event={item}
@@ -143,17 +165,10 @@ export default function FeedScreen() {
         }
       />
 
-      {/* City Selector Modal */}
-      <CitySelector
-        visible={cityModalVisible}
-        onClose={() => setCityModalVisible(false)}
-      />
-
-      {/* Search Overlay */}
-      <SearchOverlay
-        visible={searchVisible}
-        onClose={() => setSearchVisible(false)}
-      />
+      {/* Modals */}
+      <CitySelector visible={cityModalVisible} onClose={() => setCityModalVisible(false)} />
+      <SearchOverlay visible={searchVisible} onClose={() => setSearchVisible(false)} />
+      <SortDropdown visible={sortVisible} onClose={() => setSortVisible(false)} />
     </View>
   );
 }

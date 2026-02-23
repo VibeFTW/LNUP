@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuthStore } from "@/stores/authStore";
 
 function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -157,6 +158,15 @@ export default function SettingsScreen() {
             icon="star-outline"
             label="App bewerten"
             onPress={() => {}}
+          />
+          <SettingsRow
+            icon="rocket-outline"
+            label="Onboarding nochmal ansehen"
+            iconColor="#6C5CE7"
+            onPress={async () => {
+              await AsyncStorage.removeItem("@lnup_onboarded");
+              router.replace("/onboarding");
+            }}
             last
           />
         </SettingsSection>
@@ -166,17 +176,17 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="shield-checkmark-outline"
             label="Datenschutz"
-            onPress={() => {}}
+            onPress={() => router.push("/privacy")}
           />
           <SettingsRow
             icon="document-text-outline"
             label="Nutzungsbedingungen"
-            onPress={() => {}}
+            onPress={() => router.push("/terms")}
           />
           <SettingsRow
             icon="business-outline"
             label="Impressum"
-            onPress={() => {}}
+            onPress={() => router.push("/imprint")}
             last
           />
         </SettingsSection>

@@ -160,3 +160,5 @@ export interface Category {
 }
 
 export type DateFilter = "heute" | "morgen" | "wochenende" | "woche" | "alle";
+
+export type SortOption = "date" | "popular" | "newest";

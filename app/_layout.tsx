@@ -56,6 +56,18 @@ export default function RootLayout() {
           name="settings"
           options={{ headerShown: false, presentation: "card" }}
         />
+        <Stack.Screen
+          name="privacy"
+          options={{ headerShown: false, presentation: "card" }}
+        />
+        <Stack.Screen
+          name="terms"
+          options={{ headerShown: false, presentation: "card" }}
+        />
+        <Stack.Screen
+          name="imprint"
+          options={{ headerShown: false, presentation: "card" }}
+        />
       </Stack>
     </View>
   );

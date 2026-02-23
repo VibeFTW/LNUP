@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,11 +12,13 @@ import { EventCover } from "@/components/EventCover";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { PhotoModeration } from "@/components/PhotoModeration";
+import { ReportModal } from "@/components/ReportModal";
 import { formatEventDate, formatTime } from "@/lib/utils";
 import { getCategoryLabel, getCategoryIcon } from "@/lib/categories";
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [reportVisible, setReportVisible] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const event = useEventStore((s) => s.getEventById(id));
@@ -237,13 +240,22 @@ export default function EventDetailScreen() {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="bg-card border border-border rounded-xl py-4 items-center flex-row justify-center gap-2">
+            <TouchableOpacity
+              onPress={() => setReportVisible(true)}
+              className="bg-card border border-border rounded-xl py-4 items-center flex-row justify-center gap-2"
+            >
               <Ionicons name="flag-outline" size={18} color="#FF5252" />
               <Text className="text-danger font-medium text-sm">Event melden</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
+
+      <ReportModal
+        visible={reportVisible}
+        onClose={() => setReportVisible(false)}
+        eventId={event.id}
+      />
     </View>
   );
 }
