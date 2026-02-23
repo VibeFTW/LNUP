@@ -103,7 +103,7 @@ export default function EventDetailScreen() {
             <TrustBadge sourceType={event.source_type} />
             {event.creator && (
               <TouchableOpacity
-                onPress={() => router.push(`/user/${event.creator!.id}`)}
+                onPress={() => event.creator?.id && router.push(`/user/${event.creator.id}`)}
                 className="flex-row items-center gap-1.5"
               >
                 <RankBadge score={event.creator.trust_score} />

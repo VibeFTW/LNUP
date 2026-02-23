@@ -103,7 +103,7 @@ export function EventCard({ event, onToggleGoing, isGoing }: EventCardProps) {
             <TrustBadge sourceType={event.source_type} />
             {event.creator && (
               <TouchableOpacity
-                onPress={(e) => { e.stopPropagation(); router.push(`/user/${event.creator!.id}`); }}
+                onPress={(e) => { e.stopPropagation(); event.creator?.id && router.push(`/user/${event.creator.id}`); }}
                 className="flex-row items-center gap-1.5"
               >
                 <RankBadge score={event.creator.trust_score} />
