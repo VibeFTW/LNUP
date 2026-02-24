@@ -58,6 +58,7 @@ function mapRowToEvent(row: any, savedIds?: Set<string>, goingIds?: Set<string>)
         username: row.profiles.username,
         display_name: row.profiles.display_name,
         avatar_url: row.profiles.avatar_url,
+        bio: row.profiles.bio ?? null,
         role: row.profiles.role,
         trust_score: row.profiles.trust_score,
         rank: getRankForScore(row.profiles.trust_score).id,
@@ -345,6 +346,7 @@ export const useEventStore = create<EventState>((set, get) => ({
               username: row.uploader.username,
               display_name: row.uploader.display_name,
               avatar_url: row.uploader.avatar_url,
+              bio: row.uploader.bio ?? null,
               role: row.uploader.role,
               trust_score: row.uploader.trust_score,
               rank: getRankForScore(row.uploader.trust_score).id,
@@ -430,9 +432,19 @@ export const useEventStore = create<EventState>((set, get) => ({
       ),
     }));
 
-    await supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    const updateData: Record<string, string> = {
+      status: approved ? "approved" : "rejected",
+    };
+    if (approved && session?.user) {
+      updateData.approved_by = session.user.id;
+    }
+
+    const { error } = await supabase
       .from("event_photos")
-      .update({ status: approved ? "approved" : "rejected" })
+      .update(updateData)
       .eq("id", photoId);
+
+    if (error) showError("Foto konnte nicht moderiert werden.");
   },
 }));

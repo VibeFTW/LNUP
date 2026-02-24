@@ -28,7 +28,7 @@ export default function ProfileEditScreen() {
 
   const [displayName, setDisplayName] = useState(user?.display_name ?? "");
   const [username, setUsername] = useState(user?.username ?? "");
-  const [bio, setBio] = useState((user as any)?.bio ?? "");
+  const [bio, setBio] = useState(user?.bio ?? "");
   const [avatarUri, setAvatarUri] = useState<string | null>(user?.avatar_url ?? null);
   const [newAvatarLocal, setNewAvatarLocal] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -111,6 +111,7 @@ export default function ProfileEditScreen() {
         ...user!,
         display_name: displayName.trim(),
         username: username.trim(),
+        bio: bio.trim() || null,
         avatar_url: avatarUrl,
       });
 

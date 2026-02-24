@@ -41,6 +41,7 @@ export interface Profile {
   username: string;
   display_name: string;
   avatar_url: string | null;
+  bio: string | null;
   role: UserRole;
   trust_score: number;
   rank: RankId;

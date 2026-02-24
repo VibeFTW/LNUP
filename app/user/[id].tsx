@@ -32,6 +32,7 @@ export default function UserProfileScreen() {
           username: data.username,
           display_name: data.display_name,
           avatar_url: data.avatar_url,
+          bio: data.bio ?? null,
           role: data.role,
           trust_score: data.trust_score,
           rank: (data.rank ?? getRankForScore(data.trust_score).id) as RankId,

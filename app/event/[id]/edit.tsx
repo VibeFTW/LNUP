@@ -55,17 +55,25 @@ export default function EditEventScreen() {
     } catch {
       setEventDate(new Date(event.event_date));
     }
-    if (event.time_start) {
-      const [h, m] = event.time_start.split(":");
-      const d = new Date();
-      d.setHours(parseInt(h), parseInt(m), 0);
-      setTimeStart(d);
+    if (event.time_start && event.time_start.includes(":")) {
+      const parts = event.time_start.split(":");
+      const h = parseInt(parts[0] ?? "0", 10);
+      const m = parseInt(parts[1] ?? "0", 10);
+      if (!isNaN(h) && !isNaN(m)) {
+        const d = new Date();
+        d.setHours(h, m, 0);
+        setTimeStart(d);
+      }
     }
-    if (event.time_end) {
-      const [h, m] = event.time_end.split(":");
-      const d = new Date();
-      d.setHours(parseInt(h), parseInt(m), 0);
-      setTimeEnd(d);
+    if (event.time_end && event.time_end.includes(":")) {
+      const parts = event.time_end.split(":");
+      const h = parseInt(parts[0] ?? "0", 10);
+      const m = parseInt(parts[1] ?? "0", 10);
+      if (!isNaN(h) && !isNaN(m)) {
+        const d = new Date();
+        d.setHours(h, m, 0);
+        setTimeEnd(d);
+      }
     }
   }, [event]);
 

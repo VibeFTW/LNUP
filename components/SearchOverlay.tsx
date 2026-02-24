@@ -147,6 +147,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
           username: row.username,
           display_name: row.display_name,
           avatar_url: row.avatar_url,
+          bio: row.bio ?? null,
           role: row.role,
           trust_score: row.trust_score,
           rank: (row.rank ?? getRankForScore(row.trust_score).id) as RankId,
