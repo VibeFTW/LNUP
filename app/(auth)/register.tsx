@@ -7,12 +7,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "@/stores/authStore";
+import { useToastStore } from "@/stores/toastStore";
 import { COLORS } from "@/lib/constants";
 
 export default function RegisterScreen() {
@@ -20,6 +20,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const showToast = useToastStore((s) => s.showToast);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,22 +29,22 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     Keyboard.dismiss();
     if (!username || !email || !password) {
-      Alert.alert("Fehler", "Bitte alle Felder ausfüllen.");
+      showToast("Bitte alle Felder ausfüllen.", "error");
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert("Fehler", "Passwörter stimmen nicht überein.");
+      showToast("Passwörter stimmen nicht überein.", "error");
       return;
     }
     if (password.length < 6) {
-      Alert.alert("Fehler", "Passwort muss mindestens 6 Zeichen lang sein.");
+      showToast("Passwort muss mindestens 6 Zeichen lang sein.", "error");
       return;
     }
     try {
       await register(email, password, username);
       router.replace("/(tabs)");
     } catch {
-      Alert.alert("Fehler", "Registrierung fehlgeschlagen.");
+      showToast("Registrierung fehlgeschlagen.", "error");
     }
   };
 

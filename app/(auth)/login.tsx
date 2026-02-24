@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "@/stores/authStore";
+import { useToastStore } from "@/stores/toastStore";
 import { COLORS } from "@/lib/constants";
 
 export default function LoginScreen() {
@@ -19,20 +19,21 @@ export default function LoginScreen() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const showToast = useToastStore((s) => s.showToast);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
     Keyboard.dismiss();
     if (!email || !password) {
-      Alert.alert("Fehler", "Bitte E-Mail und Passwort eingeben.");
+      showToast("Bitte E-Mail und Passwort eingeben.", "error");
       return;
     }
     try {
       await login(email, password);
       router.replace("/(tabs)");
     } catch {
-      Alert.alert("Fehler", "Anmeldung fehlgeschlagen.");
+      showToast("Anmeldung fehlgeschlagen. Bitte prüfe deine Zugangsdaten.", "error");
     }
   };
 

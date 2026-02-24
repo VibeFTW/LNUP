@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { useToastStore } from "@/stores/toastStore";
 import { COLORS } from "@/lib/constants";
 
 export default function ForgotPasswordScreen() {
@@ -20,11 +20,12 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const showToast = useToastStore((s) => s.showToast);
 
   const handleReset = async () => {
     Keyboard.dismiss();
     if (!email.trim()) {
-      Alert.alert("Fehler", "Bitte gib deine E-Mail-Adresse ein.");
+      showToast("Bitte gib deine E-Mail-Adresse ein.", "error");
       return;
     }
 
@@ -34,7 +35,7 @@ export default function ForgotPasswordScreen() {
       if (error) throw error;
       setSent(true);
     } catch {
-      Alert.alert("Fehler", "Passwort-Reset fehlgeschlagen. Bitte überprüfe deine E-Mail-Adresse.");
+      showToast("Passwort-Reset fehlgeschlagen. Bitte überprüfe deine E-Mail-Adresse.", "error");
     } finally {
       setIsLoading(false);
     }
