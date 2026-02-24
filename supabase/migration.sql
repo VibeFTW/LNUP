@@ -88,10 +88,10 @@ CREATE TABLE public.events (
   time_end TIME,
   category TEXT NOT NULL DEFAULT 'other' CHECK (category IN ('nightlife', 'food_drink', 'concert', 'festival', 'sports', 'art', 'family', 'other')),
   price_info TEXT,
-  source_type TEXT NOT NULL DEFAULT 'community' CHECK (source_type IN ('api_eventbrite', 'api_ticketmaster', 'platform', 'verified_organizer', 'verified_user', 'community')),
+  source_type TEXT NOT NULL DEFAULT 'community' CHECK (source_type IN ('api_eventbrite', 'api_ticketmaster', 'ai_scraped', 'platform', 'verified_organizer', 'verified_user', 'community')),
   source_url TEXT,
   created_by UUID REFERENCES public.profiles(id),
-  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'flagged', 'removed', 'past')),
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'flagged', 'removed', 'past', 'pending_review')),
   ai_confidence DOUBLE PRECISION,
   image_url TEXT,
   is_private BOOLEAN NOT NULL DEFAULT false,
@@ -337,10 +337,17 @@ CREATE POLICY "Owners can update venues" ON public.venues FOR UPDATE USING (auth
 
 -- Events: public read active, authenticated create
 CREATE POLICY "Active events are public" ON public.events FOR SELECT USING (
-  status IN ('active', 'past') AND (
-    is_private = false OR
-    created_by = auth.uid() OR
-    EXISTS (SELECT 1 FROM public.event_members WHERE event_id = id AND user_id = auth.uid())
+  (
+    status IN ('active', 'past') AND (
+      is_private = false OR
+      created_by = auth.uid() OR
+      EXISTS (SELECT 1 FROM public.event_members WHERE event_id = id AND user_id = auth.uid())
+    )
+  ) OR (
+    status = 'pending_review' AND (
+      created_by = auth.uid() OR
+      EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    )
   )
 );
 CREATE POLICY "Authenticated users can create events" ON public.events FOR INSERT WITH CHECK (auth.role() = 'authenticated');

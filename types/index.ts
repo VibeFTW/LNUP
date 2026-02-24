@@ -23,12 +23,13 @@ export type EventCategory =
 export type EventSourceType =
   | "api_eventbrite"
   | "api_ticketmaster"
+  | "ai_scraped"
   | "platform"
   | "verified_organizer"
   | "verified_user"
   | "community";
 
-export type EventStatus = "active" | "flagged" | "removed" | "past";
+export type EventStatus = "active" | "flagged" | "removed" | "past" | "pending_review";
 
 export type PhotoStatus = "pending" | "approved" | "rejected";
 

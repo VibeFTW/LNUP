@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/stores/authStore";
 import { useEventStore } from "@/stores/eventStore";
+import { useThemeStore } from "@/stores/themeStore";
 import { SkeletonProfile } from "@/components/SkeletonProfile";
 import { getRankForScore, getNextRank, getProgressToNextRank } from "@/lib/ranks";
 import { formatEventDate, formatTime } from "@/lib/utils";
@@ -58,8 +59,21 @@ export default function ProfileScreen() {
       contentContainerStyle={{ paddingTop: insets.top }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Settings Icon */}
-      <View className="flex-row justify-end px-4 pt-3">
+      {/* Top Icons */}
+      <View className="flex-row justify-end px-4 pt-3 gap-2">
+        <TouchableOpacity
+          onPress={() => {
+            const { isDark, setMode } = useThemeStore.getState();
+            setMode(isDark ? "light" : "dark");
+          }}
+          className="w-10 h-10 rounded-full bg-card border border-border items-center justify-center"
+        >
+          <Ionicons
+            name={useThemeStore.getState().isDark ? "sunny-outline" : "moon-outline"}
+            size={18}
+            color="#A0A0B8"
+          />
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={() => router.push("/settings")}
           className="w-10 h-10 rounded-full bg-card border border-border items-center justify-center"

@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuthStore } from "@/stores/authStore";
+import { useThemeStore, type ThemeMode } from "@/stores/themeStore";
 import { supabase } from "@/lib/supabase";
 
 function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -65,6 +66,39 @@ function SettingsRow({
         <Ionicons name="chevron-forward" size={16} color="#6B6B80" />
       )}
     </TouchableOpacity>
+  );
+}
+
+function ThemeSelector() {
+  const mode = useThemeStore((s) => s.mode);
+  const setMode = useThemeStore((s) => s.setMode);
+
+  const options: { id: ThemeMode; label: string; icon: string }[] = [
+    { id: "light", label: "Hell", icon: "sunny-outline" },
+    { id: "dark", label: "Dunkel", icon: "moon-outline" },
+    { id: "system", label: "System", icon: "phone-portrait-outline" },
+  ];
+
+  return (
+    <View className="flex-row p-2 gap-1">
+      {options.map((opt) => {
+        const active = mode === opt.id;
+        return (
+          <TouchableOpacity
+            key={opt.id}
+            onPress={() => setMode(opt.id)}
+            className={`flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-lg ${
+              active ? "bg-primary" : ""
+            }`}
+          >
+            <Ionicons name={opt.icon as any} size={16} color={active ? "#FFFFFF" : "#6B6B80"} />
+            <Text className={`text-sm font-medium ${active ? "text-white" : "text-text-muted"}`}>
+              {opt.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
   );
 }
 
@@ -157,6 +191,11 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
+        {/* Design */}
+        <SettingsSection title="Design">
+          <ThemeSelector />
+        </SettingsSection>
+
         {/* App */}
         <SettingsSection title="App">
           <SettingsRow
@@ -181,6 +220,19 @@ export default function SettingsScreen() {
             last
           />
         </SettingsSection>
+
+        {/* Admin (only for admins) */}
+        {user?.role === "admin" && (
+          <SettingsSection title="Admin">
+            <SettingsRow
+              icon="sparkles-outline"
+              label="KI-Events prüfen"
+              iconColor="#6C5CE7"
+              onPress={() => router.push("/admin-review")}
+              last
+            />
+          </SettingsSection>
+        )}
 
         {/* Legal */}
         <SettingsSection title="Rechtliches">

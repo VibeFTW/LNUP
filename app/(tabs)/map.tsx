@@ -7,6 +7,7 @@ import MapView, { Marker, Callout, PROVIDER_GOOGLE } from "react-native-maps";
 import { useEventStore } from "@/stores/eventStore";
 import { useFilterStore } from "@/stores/filterStore";
 import { REGION_CENTER, GOOGLE_MAPS_API_KEY, COLORS } from "@/lib/constants";
+import { useThemeStore } from "@/stores/themeStore";
 import { matchesDateFilter } from "@/lib/utils";
 import { CitySelector } from "@/components/CitySelector";
 
@@ -27,6 +28,7 @@ export default function MapScreen() {
   const events = useEventStore((s) => s.events);
   const { dateFilter, categoryFilter, city } = useFilterStore();
   const [cityModalVisible, setCityModalVisible] = useState(false);
+  const isDark = useThemeStore((s) => s.isDark);
 
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
@@ -89,7 +91,7 @@ export default function MapScreen() {
         initialRegion={REGION_CENTER}
         showsUserLocation
         showsMyLocationButton
-        customMapStyle={MAP_DARK_STYLE}
+        customMapStyle={isDark ? MAP_DARK_STYLE : undefined}
       >
         {filteredEvents.map((event) => (
           <Marker

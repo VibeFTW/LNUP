@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuthStore } from "@/stores/authStore";
+import { useThemeStore } from "@/stores/themeStore";
 import { Toast } from "@/components/Toast";
 import "../global.css";
 
@@ -13,13 +14,17 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
-  const initialize = useAuthStore((s) => s.initialize);
+  const initializeAuth = useAuthStore((s) => s.initialize);
+  const initializeTheme = useThemeStore((s) => s.initialize);
+  const isDark = useThemeStore((s) => s.isDark);
+  const colors = useThemeStore((s) => s.colors);
 
   useEffect(() => {
     async function prepare() {
       const [onboarded] = await Promise.all([
         AsyncStorage.getItem("@lnup_onboarded"),
-        initialize(),
+        initializeAuth(),
+        initializeTheme(),
       ]);
       setNeedsOnboarding(onboarded !== "true");
       setIsReady(true);
@@ -32,12 +37,12 @@ export default function RootLayout() {
 
   return (
     <View style={{ flex: 1 }}>
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <Toast />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: "#0A0A0F" },
+          contentStyle: { backgroundColor: colors.background },
           animation: "slide_from_right",
         }}
         initialRouteName={needsOnboarding ? "onboarding" : "(tabs)"}
@@ -87,6 +92,14 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="invite/[code]"
+          options={{ headerShown: false, presentation: "card" }}
+        />
+        <Stack.Screen
+          name="extract-event"
+          options={{ headerShown: false, presentation: "card" }}
+        />
+        <Stack.Screen
+          name="admin-review"
           options={{ headerShown: false, presentation: "card" }}
         />
       </Stack>

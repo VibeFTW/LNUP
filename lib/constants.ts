@@ -1,19 +1,33 @@
 export const COLORS = {
-  background: "#0A0A0F",
-  card: "#1A1A2E",
-  cardHover: "#252540",
-  border: "#2A2A3E",
+  get background() { return getThemeColors().background; },
+  get card() { return getThemeColors().card; },
+  get cardHover() { return getThemeColors().cardHover; },
+  get border() { return getThemeColors().border; },
   primary: "#6C5CE7",
   primaryLight: "#8B7CF7",
-  secondary: "#00D2FF",
+  get secondary() { return getThemeColors().secondary; },
   accent: "#FF6B9D",
-  success: "#00E676",
-  warning: "#FFC107",
-  danger: "#FF5252",
-  textPrimary: "#FFFFFF",
-  textSecondary: "#A0A0B8",
-  textMuted: "#6B6B80",
-} as const;
+  get success() { return getThemeColors().success; },
+  get warning() { return getThemeColors().warning; },
+  get danger() { return getThemeColors().danger; },
+  get textPrimary() { return getThemeColors().textPrimary; },
+  get textSecondary() { return getThemeColors().textSecondary; },
+  get textMuted() { return getThemeColors().textMuted; },
+};
+
+function getThemeColors() {
+  try {
+    const { useThemeStore } = require("@/stores/themeStore");
+    return useThemeStore.getState().colors;
+  } catch {
+    return {
+      background: "#F5F5FA", card: "#FFFFFF", cardHover: "#F0F0F5",
+      border: "#E8E8F0", secondary: "#00B4D8", success: "#00C853",
+      warning: "#FF9800", danger: "#EF5350", textPrimary: "#1A1A2E",
+      textSecondary: "#6B6B80", textMuted: "#A0A0B8",
+    };
+  }
+}
 
 export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
 export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";

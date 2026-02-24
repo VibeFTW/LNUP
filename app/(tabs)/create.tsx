@@ -12,6 +12,7 @@ import {
   Switch,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useToastStore } from "@/stores/toastStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -29,6 +30,7 @@ import { de } from "date-fns/locale";
 
 export default function CreateEventScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [venueName, setVenueName] = useState("");
@@ -211,6 +213,14 @@ export default function CreateEventScreen() {
             Teile ein Event mit deiner Community
           </Text>
         </View>
+
+        <TouchableOpacity
+          onPress={() => router.push("/extract-event")}
+          className="mx-4 mb-4 flex-row items-center justify-center gap-2 bg-primary/10 border border-primary/30 rounded-xl py-3"
+        >
+          <Ionicons name="sparkles" size={16} color="#6C5CE7" />
+          <Text className="text-sm font-semibold text-primary">Event aus URL erkennen (KI)</Text>
+        </TouchableOpacity>
 
         <View className="px-4 gap-4 pb-8">
           {/* Flyer / Cover Image */}
