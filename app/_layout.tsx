@@ -73,6 +73,14 @@ export default function RootLayout() {
           name="imprint"
           options={{ headerShown: false, presentation: "card" }}
         />
+        <Stack.Screen
+          name="profile-edit"
+          options={{ headerShown: false, presentation: "card" }}
+        />
+        <Stack.Screen
+          name="notification-settings"
+          options={{ headerShown: false, presentation: "card" }}
+        />
       </Stack>
     </View>
   );

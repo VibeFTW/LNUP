@@ -9,6 +9,7 @@ CREATE TABLE public.profiles (
   username TEXT UNIQUE NOT NULL,
   display_name TEXT NOT NULL,
   avatar_url TEXT,
+  bio TEXT,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'verified_organizer', 'verified_user', 'user')),
   trust_score INTEGER NOT NULL DEFAULT 0,
   email_verified BOOLEAN NOT NULL DEFAULT false,
@@ -454,3 +455,35 @@ INSERT INTO public.cities (name, lat, lng) VALUES
   ('Kelheim', 48.9167, 11.8667),
   ('Bogen', 48.9097, 12.6881)
 ON CONFLICT (name) DO NOTHING;
+
+-- ============================================================
+-- PUSH TOKENS
+-- ============================================================
+
+CREATE TABLE public.push_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  token TEXT NOT NULL,
+  platform TEXT NOT NULL DEFAULT 'unknown',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, token)
+);
+
+ALTER TABLE public.push_tokens ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own tokens" ON public.push_tokens FOR ALL USING (auth.uid() = user_id);
+
+-- ============================================================
+-- NOTIFICATION PREFERENCES
+-- ============================================================
+
+CREATE TABLE public.notification_preferences (
+  user_id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  event_reminders BOOLEAN NOT NULL DEFAULT true,
+  new_events_city BOOLEAN NOT NULL DEFAULT true,
+  event_updates BOOLEAN NOT NULL DEFAULT true,
+  post_event_confirm BOOLEAN NOT NULL DEFAULT true,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.notification_preferences ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own preferences" ON public.notification_preferences FOR ALL USING (auth.uid() = user_id);

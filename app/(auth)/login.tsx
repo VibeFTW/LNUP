@@ -84,6 +84,13 @@ export default function LoginScreen() {
         </View>
 
         <TouchableOpacity
+          onPress={() => router.push("/(auth)/forgot-password")}
+          className="items-end mb-6"
+        >
+          <Text className="text-sm text-primary font-medium">Passwort vergessen?</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={handleLogin}
           disabled={isLoading}
           className={`rounded-xl py-4 items-center ${

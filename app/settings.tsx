@@ -152,7 +152,7 @@ export default function SettingsScreen() {
             icon="create-outline"
             label="Profil bearbeiten"
             iconColor="#6C5CE7"
-            onPress={() => {}}
+            onPress={() => router.push("/profile-edit")}
             last
           />
         </SettingsSection>
@@ -160,19 +160,15 @@ export default function SettingsScreen() {
         {/* App */}
         <SettingsSection title="App">
           <SettingsRow
+            icon="notifications-outline"
+            label="Benachrichtigungen"
+            iconColor="#6C5CE7"
+            onPress={() => router.push("/notification-settings")}
+          />
+          <SettingsRow
             icon="information-circle-outline"
             label="Version"
             value="1.0.0"
-          />
-          <SettingsRow
-            icon="chatbubble-outline"
-            label="Feedback geben"
-            onPress={() => {}}
-          />
-          <SettingsRow
-            icon="star-outline"
-            label="App bewerten"
-            onPress={() => {}}
           />
           <SettingsRow
             icon="rocket-outline"

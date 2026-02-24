@@ -46,6 +46,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-font",
     "expo-image-picker",
     "expo-secure-store",
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/icon.png",
+        color: "#6C5CE7",
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

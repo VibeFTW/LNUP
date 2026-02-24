@@ -4,12 +4,19 @@ import { supabase } from "@/lib/supabase";
 import { fetchExternalEvents } from "@/lib/eventApis";
 import { EVENTBRITE_API_KEY, TICKETMASTER_API_KEY } from "@/lib/constants";
 import { getRankForScore } from "@/lib/ranks";
+import { scheduleEventReminder, cancelScheduledNotification } from "@/lib/notifications";
+import { useToastStore } from "./toastStore";
+
+function showError(msg: string) {
+  useToastStore.getState().showToast(msg, "error");
+}
 
 interface EventState {
   events: Event[];
   photos: EventPhoto[];
   savedEventIds: Set<string>;
   goingEventIds: Set<string>;
+  reminderIds: Map<string, string>;
   isLoading: boolean;
   fetchEvents: (city?: string) => Promise<void>;
   toggleSave: (eventId: string) => Promise<void>;
@@ -97,6 +104,7 @@ export const useEventStore = create<EventState>((set, get) => ({
   photos: [],
   savedEventIds: new Set<string>(),
   goingEventIds: new Set<string>(),
+  reminderIds: new Map<string, string>(),
   isLoading: false,
 
   fetchEvents: async (city?: string) => {
@@ -136,6 +144,7 @@ export const useEventStore = create<EventState>((set, get) => ({
 
       if (error) {
         console.warn("Supabase event fetch error:", error.message);
+        showError("Events konnten nicht geladen werden.");
         set({ isLoading: false });
         return;
       }
@@ -157,6 +166,7 @@ export const useEventStore = create<EventState>((set, get) => ({
       }
     } catch (error) {
       console.warn("Event fetch failed:", error);
+      showError("Verbindungsfehler. Bitte prüfe deine Internetverbindung.");
     } finally {
       set({ isLoading: false });
     }
@@ -235,10 +245,35 @@ export const useEventStore = create<EventState>((set, get) => ({
         .delete()
         .eq("event_id", eventId)
         .eq("user_id", session.user.id);
+
+      const reminderId = get().reminderIds.get(eventId);
+      if (reminderId) {
+        cancelScheduledNotification(reminderId).catch(() => {});
+        const next = new Map(get().reminderIds);
+        next.delete(eventId);
+        set({ reminderIds: next });
+      }
     } else {
       await supabase
         .from("event_confirmations")
         .insert({ event_id: eventId, user_id: session.user.id, status: "going" });
+
+      const event = get().getEventById(eventId);
+      if (event?.event_date && event?.time_start) {
+        scheduleEventReminder(
+          eventId,
+          event.title,
+          event.venue?.name ?? "",
+          event.event_date,
+          event.time_start
+        ).then((notifId) => {
+          if (notifId) {
+            const next = new Map(get().reminderIds);
+            next.set(eventId, notifId);
+            set({ reminderIds: next });
+          }
+        }).catch(() => {});
+      }
     }
   },
 
@@ -382,6 +417,7 @@ export const useEventStore = create<EventState>((set, get) => ({
       }));
     } catch (error) {
       console.warn("Photo upload failed:", error);
+      showError("Foto konnte nicht hochgeladen werden.");
     }
   },
 
