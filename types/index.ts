@@ -99,6 +99,7 @@ export interface Event {
   status: EventStatus;
   ai_confidence: number | null;
   image_url: string | null;
+  images?: string[];
   created_at: string;
   saves_count: number;
   going_count: number;

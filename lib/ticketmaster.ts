@@ -5,6 +5,7 @@ interface TMEvent {
   id: string;
   name: string;
   url: string;
+  description?: string;
   info?: string;
   dates: {
     start: {
@@ -17,7 +18,7 @@ interface TMEvent {
     status?: { code: string };
   };
   priceRanges?: { min: number; max: number; currency: string }[];
-  images?: { url: string; width: number; height: number }[];
+  images?: { url: string; width: number; height: number; ratio?: string; fallback?: boolean }[];
   classifications?: {
     segment?: { name: string };
     genre?: { name: string };
@@ -110,12 +111,30 @@ export async function fetchTicketmasterEvents(
         const segmentName = tm.classifications?.[0]?.segment?.name ?? null;
         const genreName = tm.classifications?.[0]?.genre?.name ?? null;
 
-        const bestImage = tm.images
-          ?.filter((img) => img.width >= 500 && img.width <= 1200)
-          ?.sort((a, b) => b.width - a.width)
-          ?.[0]?.url
-          ?? tm.images?.sort((a, b) => b.width - a.width)?.[0]?.url
+        const nonFallbackImages = (tm.images ?? []).filter((img) => !img.fallback);
+        const imagePool = nonFallbackImages.length > 0 ? nonFallbackImages : (tm.images ?? []);
+
+        const bestImage = imagePool
+          .filter((img) => img.width >= 500 && img.width <= 1200)
+          .sort((a, b) => b.width - a.width)
+          [0]?.url
+          ?? imagePool.sort((a, b) => b.width - a.width)[0]?.url
           ?? null;
+
+        const seenUrls = new Set<string>();
+        const topImages = imagePool
+          .filter((img) => img.width >= 400)
+          .sort((a, b) => b.width - a.width)
+          .filter((img) => {
+            const base = img.url.split("?")[0].replace(/_\d+x\d+/, "");
+            if (seenUrls.has(base)) return false;
+            seenUrls.add(base);
+            return true;
+          })
+          .slice(0, 3)
+          .map((img) => img.url);
+
+        const description = (tm.description ?? tm.info ?? "").substring(0, 500);
 
         let priceInfo = "";
         if (tm.priceRanges?.length) {
@@ -130,14 +149,14 @@ export async function fetchTicketmasterEvents(
         }
 
         const tmCityName = tmVenue?.city?.name ?? "";
-        const germanCity = CITY_TO_GERMAN[tmCityName] ?? tmCityName;
+        const germanCity = CITY_TO_GERMAN[tmCityName] ?? tmCityName || tmVenue?.address?.line1?.split(",").pop()?.trim() || "";
 
         const venue: Venue | undefined = tmVenue
           ? {
               id: `tm-venue-${tmVenue.id}`,
               name: tmVenue.name,
               address: [tmVenue.address?.line1, germanCity].filter(Boolean).join(", "),
-              city: germanCity || city,
+              city: germanCity || city || "Deutschland",
               lat: parseFloat(tmVenue.location?.latitude ?? "0"),
               lng: parseFloat(tmVenue.location?.longitude ?? "0"),
               google_place_id: null,
@@ -153,7 +172,7 @@ export async function fetchTicketmasterEvents(
         return {
           id: `tm-${tm.id}`,
           title: tm.name,
-          description: tm.info?.substring(0, 300) ?? "",
+          description,
           venue_id: venue?.id ?? "",
           venue,
           series_id: null,
@@ -168,6 +187,7 @@ export async function fetchTicketmasterEvents(
           status: "active",
           ai_confidence: 0.95,
           image_url: bestImage,
+          images: topImages.length > 1 ? topImages : undefined,
           created_at: new Date().toISOString(),
           is_private: false,
           invite_code: null,

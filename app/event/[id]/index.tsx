@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Share, Alert } from "react-native";
+import { useState, useEffect, useRef } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Share, Alert, FlatList, Dimensions } from "react-native";
+import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -154,7 +155,27 @@ export default function EventDetailScreen() {
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <EventCover category={event.category} imageUrl={event.image_url} size="detail" />
+        {event.images && event.images.length > 1 ? (
+          <View style={{ height: 220 }}>
+            <FlatList
+              data={event.images}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(_, i) => String(i)}
+              renderItem={({ item }) => (
+                <View style={{ width: Dimensions.get("window").width, height: 220 }}>
+                  <Image source={{ uri: item }} style={{ width: "100%", height: "100%" }} contentFit="cover" transition={200} />
+                </View>
+              )}
+            />
+            <View className="absolute bottom-2 right-3 bg-black/50 rounded-full px-2.5 py-1">
+              <Text className="text-xs text-white font-medium">{event.images.length} Fotos</Text>
+            </View>
+          </View>
+        ) : (
+          <EventCover category={event.category} imageUrl={event.image_url} size="detail" />
+        )}
 
         <View className="px-4 pb-8 -mt-4 rounded-t-3xl bg-background pt-5">
           {/* Private Badge */}
