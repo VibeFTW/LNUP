@@ -11,8 +11,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useFilterStore } from "@/stores/filterStore";
 import { useEventStore } from "@/stores/eventStore";
+import { useToastStore } from "@/stores/toastStore";
 import { supabase } from "@/lib/supabase";
 import { COLORS } from "@/lib/constants";
+import { discoverLocalEvents } from "@/lib/aiEventDiscovery";
 
 let cachedCities: string[] | null = null;
 
@@ -77,11 +79,43 @@ export function CityDropdown({ visible, onClose }: CityDropdownProps) {
     return list.sort((a, b) => (cityCounts[b] ?? 0) - (cityCounts[a] ?? 0));
   }, [search, cities, cityCounts]);
 
+  const [isDiscovering, setIsDiscovering] = useState(false);
+
   const handleSelect = (selected: string) => {
     setCity(selected);
     setSearch("");
     onClose();
   };
+
+  const handleAiDiscover = async () => {
+    const cityName = search.trim();
+    if (!cityName || isDiscovering) return;
+
+    setIsDiscovering(true);
+    try {
+      const discovered = await discoverLocalEvents(cityName);
+      if (discovered.length > 0) {
+        useEventStore.getState().mergeExternalEvents(discovered);
+        useToastStore.getState().showToast(
+          `${discovered.length} Events in ${cityName} gefunden!`,
+          "success"
+        );
+        handleSelect(cityName);
+      } else {
+        useToastStore.getState().showToast(
+          `Keine Events in ${cityName} gefunden.`,
+          "info"
+        );
+      }
+    } catch {
+      useToastStore.getState().showToast("KI-Suche fehlgeschlagen.", "error");
+    } finally {
+      setIsDiscovering(false);
+    }
+  };
+
+  const searchNotInList = search.trim().length > 1 &&
+    !cities.some((c) => c.toLowerCase() === search.trim().toLowerCase());
 
   if (!visible) return null;
 
@@ -174,6 +208,23 @@ export function CityDropdown({ visible, onClose }: CityDropdownProps) {
             }}
             showsVerticalScrollIndicator={false}
           />
+        )}
+
+        {searchNotInList && (
+          <TouchableOpacity
+            onPress={handleAiDiscover}
+            disabled={isDiscovering}
+            className="mx-3 mb-3 mt-1 flex-row items-center justify-center gap-2 bg-primary/10 border border-primary/30 rounded-lg py-2.5"
+          >
+            {isDiscovering ? (
+              <ActivityIndicator color="#6C5CE7" size="small" />
+            ) : (
+              <Ionicons name="sparkles" size={14} color="#6C5CE7" />
+            )}
+            <Text className="text-xs font-semibold text-primary">
+              {isDiscovering ? `Suche in ${search.trim()}...` : `"${search.trim()}" mit KI entdecken`}
+            </Text>
+          </TouchableOpacity>
         )}
       </Pressable>
     </Pressable>
