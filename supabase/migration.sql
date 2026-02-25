@@ -88,7 +88,7 @@ CREATE TABLE public.events (
   time_end TIME,
   category TEXT NOT NULL DEFAULT 'other' CHECK (category IN ('nightlife', 'food_drink', 'concert', 'festival', 'sports', 'art', 'family', 'other')),
   price_info TEXT,
-  source_type TEXT NOT NULL DEFAULT 'community' CHECK (source_type IN ('api_eventbrite', 'api_ticketmaster', 'ai_scraped', 'platform', 'verified_organizer', 'verified_user', 'community')),
+  source_type TEXT NOT NULL DEFAULT 'community' CHECK (source_type IN ('api_ticketmaster', 'ai_discovered', 'ai_scraped', 'platform', 'verified_organizer', 'verified_user', 'community')),
   source_url TEXT,
   created_by UUID REFERENCES public.profiles(id),
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'flagged', 'removed', 'past', 'pending_review')),

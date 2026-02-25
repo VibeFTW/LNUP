@@ -1,14 +1,7 @@
 import type { Event } from "@/types";
-import { fetchEventbriteEvents } from "./eventbrite";
 import { fetchTicketmasterEvents } from "./ticketmaster";
-import { fetchSeatgeekEvents } from "./seatgeek";
 import { discoverLocalEvents } from "./aiEventDiscovery";
-import {
-  EVENTBRITE_API_KEY,
-  TICKETMASTER_API_KEY,
-  SEATGEEK_CLIENT_ID,
-  GEMINI_API_KEY,
-} from "./constants";
+import { TICKETMASTER_API_KEY, GEMINI_API_KEY } from "./constants";
 
 function normalizeForComparison(str: string): string {
   return str
@@ -94,8 +87,6 @@ function areSimilarEvents(a: Event, b: Event): boolean {
 
 const SOURCE_PRIORITY: Record<string, number> = {
   api_ticketmaster: 4,
-  api_eventbrite: 3,
-  api_seatgeek: 2,
   ai_discovered: 1,
 };
 
@@ -129,15 +120,11 @@ function deduplicateEvents(events: Event[]): Event[] {
 
 export async function fetchExternalEvents(city: string): Promise<Event[]> {
   const apiResults = await Promise.allSettled([
-    fetchEventbriteEvents(city, EVENTBRITE_API_KEY),
     fetchTicketmasterEvents(city, TICKETMASTER_API_KEY),
-    fetchSeatgeekEvents(city, SEATGEEK_CLIENT_ID),
   ]);
 
   const apiEvents: Event[] = [
     ...(apiResults[0].status === "fulfilled" ? apiResults[0].value : []),
-    ...(apiResults[1].status === "fulfilled" ? apiResults[1].value : []),
-    ...(apiResults[2].status === "fulfilled" ? apiResults[2].value : []),
   ];
 
   // AI Discovery runs in parallel but is non-blocking —

@@ -42,9 +42,10 @@ export function matchesDateFilter(dateStr: string, filter: DateFilter): boolean 
 }
 
 export function getSourceLabel(source: EventSourceType): string {
-  const labels: Record<EventSourceType, string> = {
-    api_eventbrite: "Eventbrite",
+  const labels: Record<string, string> = {
     api_ticketmaster: "Ticketmaster",
+    ai_discovered: "KI-erkannt",
+    ai_scraped: "KI-erkannt",
     platform: "LNUP",
     verified_organizer: "Veranstalter",
     verified_user: "Verifiziert",

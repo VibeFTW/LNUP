@@ -1,9 +1,10 @@
 import { View, Text } from "react-native";
 import type { EventSourceType } from "@/types";
 
-const BADGE_CONFIG: Record<EventSourceType, { label: string; color: string; bgColor: string }> = {
-  api_eventbrite: { label: "✦ Eventbrite", color: "#FF6B00", bgColor: "rgba(255,107,0,0.15)" },
+const BADGE_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
   api_ticketmaster: { label: "✦ Ticketmaster", color: "#009CDE", bgColor: "rgba(0,156,222,0.15)" },
+  ai_discovered: { label: "✦ KI-erkannt", color: "#8B7CF7", bgColor: "rgba(139,124,247,0.15)" },
+  ai_scraped: { label: "✦ KI-erkannt", color: "#8B7CF7", bgColor: "rgba(139,124,247,0.15)" },
   platform: { label: "✦ LNUP", color: "#6C5CE7", bgColor: "rgba(108,92,231,0.15)" },
   verified_organizer: { label: "✓ Veranstalter", color: "#00E676", bgColor: "rgba(0,230,118,0.15)" },
   verified_user: { label: "✓ Verifiziert", color: "#00D2FF", bgColor: "rgba(0,210,255,0.15)" },

@@ -21,9 +21,7 @@ export type EventCategory =
   | "other";
 
 export type EventSourceType =
-  | "api_eventbrite"
   | "api_ticketmaster"
-  | "api_seatgeek"
   | "ai_discovered"
   | "ai_scraped"
   | "platform"
