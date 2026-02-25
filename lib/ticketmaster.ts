@@ -39,6 +39,14 @@ interface TMResponse {
   page: { totalElements: number };
 }
 
+const CITY_NAME_MAP: Record<string, string> = {
+  "München": "Munich",
+  "Nürnberg": "Nuremberg",
+  "Köln": "Cologne",
+  "Braunschweig": "Brunswick",
+  "Hannover": "Hanover",
+};
+
 export async function fetchTicketmasterEvents(
   city: string,
   apiKey: string
@@ -46,8 +54,9 @@ export async function fetchTicketmasterEvents(
   if (!apiKey) return [];
 
   try {
+    const ticketmasterCity = CITY_NAME_MAP[city] ?? city;
     const params = new URLSearchParams({
-      city,
+      city: ticketmasterCity,
       countryCode: "DE",
       size: "20",
       sort: "date,asc",
