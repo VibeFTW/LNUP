@@ -149,7 +149,7 @@ export async function fetchTicketmasterEvents(
         }
 
         const tmCityName = tmVenue?.city?.name ?? "";
-        const germanCity = CITY_TO_GERMAN[tmCityName] ?? tmCityName || tmVenue?.address?.line1?.split(",").pop()?.trim() || "";
+        const germanCity = (CITY_TO_GERMAN[tmCityName] ?? tmCityName) || (tmVenue?.address?.line1?.split(",").pop()?.trim()) || "";
 
         const venue: Venue | undefined = tmVenue
           ? {
