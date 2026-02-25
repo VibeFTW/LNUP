@@ -17,14 +17,14 @@ Events sind überall verstreut: Facebook, Instagram, Eventbrite, Webseiten von L
 ## Features
 
 ### AI-gestützte Event-Erkennung
-Ein KI-Pipeline durchsucht automatisch das Internet, Social Media und Venue-Webseiten nach Events. Die KI extrahiert strukturierte Daten (Titel, Datum, Ort, Beschreibung, Preis) und fügt sie dem Feed hinzu. Ergänzt wird das durch offizielle APIs von Eventbrite und Ticketmaster.
+Ein KI-Pipeline durchsucht automatisch das Internet, Social Media und Venue-Webseiten nach Events. Die KI extrahiert strukturierte Daten (Titel, Datum, Ort, Beschreibung, Preis) und fügt sie dem Feed hinzu. Ergänzt wird das durch die offizielle Ticketmaster Discovery API.
 
 ### Community-Events mit Vertrauenssystem
 Jeder kann Events erstellen — aber nicht jedes Event ist gleich vertrauenswürdig. Jedes Event zeigt transparent an, woher es kommt:
 
 | Badge | Quelle |
 |-------|--------|
-| ✦ Eventbrite / Ticketmaster | Automatisch aus offiziellen APIs |
+| ✦ Ticketmaster | Automatisch aus offizieller API |
 | ✦ LNUP | Vom LNUP-Team verifiziert |
 | ✓ Veranstalter | Verifizierte Venue-Betreiber |
 | ✓ Verifiziert | Verifizierte Nutzer |
@@ -73,7 +73,7 @@ Events lassen sich nach Datum (Heute, Morgen, Wochenende, Diese Woche) und Kateg
 | **Backend** | Supabase (PostgreSQL, Auth, Storage, Edge Functions) |
 | **KI** | Google Gemini API |
 | **Karten** | Google Maps SDK |
-| **Event-APIs** | Eventbrite API, Ticketmaster Discovery API |
+| **Event-APIs** | Ticketmaster Discovery API |
 | **Sprache** | TypeScript (strict mode) |
 
 ### Projektstruktur

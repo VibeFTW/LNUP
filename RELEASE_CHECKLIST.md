@@ -23,7 +23,6 @@ Everything you need to do before publishing the app to the App Store, Google Pla
 - [ ] `EXPO_PUBLIC_SUPABASE_ANON_KEY` -- your Supabase anon/public key
 - [ ] `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` -- Google Maps API key (needs billing account)
 - [ ] `EXPO_GEMINI_API_KEY` -- Google Gemini API key (optional, for AI pipeline)
-- [ ] `EXPO_PUBLIC_EVENTBRITE_API_KEY` -- Eventbrite API key (optional)
 - [ ] `EXPO_PUBLIC_TICKETMASTER_API_KEY` -- Ticketmaster API key (optional)
 
 ### Vercel (for web deployment)
