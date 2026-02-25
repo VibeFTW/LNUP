@@ -61,37 +61,46 @@ export async function fetchTicketmasterEvents(
   try {
     const allTmEvents: TMEvent[] = [];
     const pageSize = 200;
-    const maxPages = city ? 3 : 10;
+    const maxPages = city ? 2 : 5;
     let page = 0;
     let totalPages = 1;
 
     while (page < totalPages && page < maxPages) {
-      const params = new URLSearchParams({
-        countryCode: "DE",
-        size: String(pageSize),
-        page: String(page),
-        sort: "date,asc",
-        apikey: apiKey,
-      });
+      try {
+        const params = new URLSearchParams({
+          countryCode: "DE",
+          size: String(pageSize),
+          page: String(page),
+          sort: "date,asc",
+          apikey: apiKey,
+        });
 
-      if (city) {
-        params.set("city", CITY_TO_ENGLISH[city] ?? city);
-      }
+        if (city) {
+          params.set("city", CITY_TO_ENGLISH[city] ?? city);
+        }
 
-      const response = await fetch(
-        `https://app.ticketmaster.com/discovery/v2/events.json?${params}`
-      );
+        const response = await fetch(
+          `https://app.ticketmaster.com/discovery/v2/events.json?${params}`
+        );
 
-      if (!response.ok) {
-        console.warn(`Ticketmaster API error: ${response.status}`);
+        if (!response.ok) {
+          console.warn(`Ticketmaster page ${page} error: ${response.status}`);
+          break;
+        }
+
+        const data: TMResponse = await response.json();
+        const pageEvents = data._embedded?.events ?? [];
+        allTmEvents.push(...pageEvents);
+        totalPages = Math.min(data.page.totalPages, maxPages);
+        page++;
+
+        if (page < totalPages) {
+          await new Promise((r) => setTimeout(r, 250));
+        }
+      } catch {
+        console.warn(`Ticketmaster page ${page} fetch failed, stopping pagination`);
         break;
       }
-
-      const data: TMResponse = await response.json();
-      const pageEvents = data._embedded?.events ?? [];
-      allTmEvents.push(...pageEvents);
-      totalPages = data.page.totalPages;
-      page++;
     }
 
     return allTmEvents
