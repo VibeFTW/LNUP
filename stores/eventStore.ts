@@ -297,6 +297,12 @@ export const useEventStore = create<EventState>((set, get) => ({
   },
 
   toggleSave: async (eventId) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      showError("Bitte melde dich an, um Events zu speichern.");
+      return;
+    }
+
     const { savedEventIds } = get();
     const isSaved = savedEventIds.has(eventId);
 
@@ -320,9 +326,6 @@ export const useEventStore = create<EventState>((set, get) => ({
       ),
     }));
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-
     if (isSaved) {
       await supabase
         .from("event_saves")
@@ -337,6 +340,12 @@ export const useEventStore = create<EventState>((set, get) => ({
   },
 
   toggleGoing: async (eventId) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      showError("Bitte melde dich an, um teilzunehmen.");
+      return;
+    }
+
     const { goingEventIds } = get();
     const isGoing = goingEventIds.has(eventId);
 
@@ -359,9 +368,6 @@ export const useEventStore = create<EventState>((set, get) => ({
           : e
       ),
     }));
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
 
     if (isGoing) {
       await supabase
@@ -402,6 +408,12 @@ export const useEventStore = create<EventState>((set, get) => ({
   },
 
   confirmAttended: async (eventId) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      showError("Bitte melde dich an, um Teilnahme zu bestätigen.");
+      return;
+    }
+
     set((state) => ({
       events: state.events.map((e) =>
         e.id === eventId
@@ -409,9 +421,6 @@ export const useEventStore = create<EventState>((set, get) => ({
           : e
       ),
     }));
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
 
     await supabase
       .from("event_confirmations")
