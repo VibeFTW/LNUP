@@ -1,4 +1,4 @@
-import { ScrollView, TouchableOpacity, Text } from "react-native";
+import { ScrollView, TouchableOpacity, Text, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { EVENT_CATEGORIES } from "@/lib/categories";
 import type { EventCategory } from "@/types";
@@ -17,8 +17,9 @@ export function CategoryFilter({ selected, onSelect, eventCounts }: CategoryFilt
   return (
     <ScrollView
       horizontal
-      showsHorizontalScrollIndicator={false}
+      showsHorizontalScrollIndicator={Platform.OS === "web"}
       contentContainerClassName="px-4 gap-2"
+      style={{ flexShrink: 0 }}
     >
       <TouchableOpacity
         onPress={() => onSelect(null)}

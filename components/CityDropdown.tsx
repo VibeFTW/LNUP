@@ -15,6 +15,7 @@ import { useToastStore } from "@/stores/toastStore";
 import { supabase } from "@/lib/supabase";
 import { COLORS } from "@/lib/constants";
 import { discoverLocalEvents } from "@/lib/aiEventDiscovery";
+import { persistAiEvents } from "@/stores/eventStore";
 
 let cachedCities: string[] | null = null;
 
@@ -96,6 +97,9 @@ export function CityDropdown({ visible, onClose }: CityDropdownProps) {
       const discovered = await discoverLocalEvents(cityName);
       if (discovered.length > 0) {
         useEventStore.getState().mergeExternalEvents(discovered);
+        persistAiEvents(discovered).catch((err) =>
+          console.warn("AI event persist failed:", err)
+        );
         useToastStore.getState().showToast(
           `${discovered.length} Events in ${cityName} gefunden!`,
           "success"

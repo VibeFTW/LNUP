@@ -1,4 +1,4 @@
-import { ScrollView, TouchableOpacity, Text } from "react-native";
+import { ScrollView, TouchableOpacity, Text, Platform } from "react-native";
 import { DATE_FILTERS } from "@/lib/categories";
 import type { DateFilter as DateFilterType } from "@/types";
 
@@ -11,8 +11,9 @@ export function DateFilter({ selected, onSelect }: DateFilterProps) {
   return (
     <ScrollView
       horizontal
-      showsHorizontalScrollIndicator={false}
+      showsHorizontalScrollIndicator={Platform.OS === "web"}
       contentContainerClassName="px-4 gap-2"
+      style={{ flexShrink: 0 }}
     >
       {DATE_FILTERS.map((filter) => (
         <TouchableOpacity

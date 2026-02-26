@@ -14,14 +14,21 @@ function showError(msg: string) {
 async function persistExternalEvents(events: Event[]): Promise<void> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return;
+  await persistEventsToDb(events, ["api_ticketmaster"]);
+}
 
+export async function persistAiEvents(events: Event[]): Promise<void> {
+  await persistEventsToDb(events, ["ai_discovered", "ai_scraped"]);
+}
+
+async function persistEventsToDb(events: Event[], sourceTypes: string[]): Promise<void> {
   const seenKeys = new Set<string>();
   const seenCities = new Set<string>();
 
   const { data: existingEvents } = await supabase
     .from("events")
     .select("title, event_date")
-    .eq("source_type", "api_ticketmaster")
+    .in("source_type", sourceTypes)
     .limit(2000);
 
   const existingSet = new Set(
@@ -30,8 +37,6 @@ async function persistExternalEvents(events: Event[]): Promise<void> {
 
   for (const event of events) {
     try {
-      if (!event.source_url) continue;
-
       const dedupKey = `${event.title}|${event.event_date}`;
       if (seenKeys.has(dedupKey) || existingSet.has(dedupKey)) continue;
       seenKeys.add(dedupKey);
@@ -83,7 +88,7 @@ async function persistExternalEvents(events: Event[]): Promise<void> {
         category: event.category,
         price_info: event.price_info || null,
         source_type: event.source_type,
-        source_url: event.source_url,
+        source_url: event.source_url || null,
         status: "active",
         ai_confidence: event.ai_confidence,
         image_url: event.image_url,
