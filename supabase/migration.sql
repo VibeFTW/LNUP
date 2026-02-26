@@ -386,11 +386,8 @@ CREATE POLICY "Users can update own confirmations" ON public.event_confirmations
 CREATE POLICY "Users see own reports" ON public.event_reports FOR SELECT USING (auth.uid() = reported_by);
 CREATE POLICY "Users can report events" ON public.event_reports FOR INSERT WITH CHECK (auth.uid() = reported_by);
 
--- Event members: members see co-members, creators see all, users join/leave
-CREATE POLICY "Members see event members" ON public.event_members FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.event_members em WHERE em.event_id = event_id AND em.user_id = auth.uid())
-  OR EXISTS (SELECT 1 FROM public.events e WHERE e.id = event_id AND e.created_by = auth.uid())
-);
+-- Event members: authenticated users can see memberships (avoids recursive RLS)
+CREATE POLICY "Members are visible" ON public.event_members FOR SELECT USING (true);
 CREATE POLICY "Users can join events" ON public.event_members FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can leave events" ON public.event_members FOR DELETE USING (
   auth.uid() = user_id

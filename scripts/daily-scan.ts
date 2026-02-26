@@ -380,9 +380,18 @@ async function main() {
     errors: [],
   };
 
-  await refreshTicketmaster(result);
-  await scanCitiesWithAi(result);
-  await archivePastEvents(result);
+  try { await refreshTicketmaster(result); } catch (e: any) {
+    console.error("TM refresh failed:", e.message);
+    result.errors.push(`TM refresh: ${e.message}`);
+  }
+  try { await scanCitiesWithAi(result); } catch (e: any) {
+    console.error("AI scan failed:", e.message);
+    result.errors.push(`AI scan: ${e.message}`);
+  }
+  try { await archivePastEvents(result); } catch (e: any) {
+    console.error("Archive failed:", e.message);
+    result.errors.push(`Archive: ${e.message}`);
+  }
 
   console.log("\n=== Scan Complete ===");
   console.log(`  TM: ${result.tmEventsPersisted}/${result.tmEventsFound} persisted`);
