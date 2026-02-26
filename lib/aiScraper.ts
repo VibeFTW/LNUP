@@ -15,9 +15,11 @@ export interface ExtractedEvent {
   confidence: number;
 }
 
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
-const EXTRACTION_PROMPT = `Du bist ein Event-Daten-Extraktor. Analysiere den folgenden Webseiten-Inhalt und extrahiere Event-Informationen.
+const EXTRACTION_PROMPT = `Du bist ein Event-Daten-Extraktor. Rufe die folgende URL auf und extrahiere Event-Informationen daraus.
+
+WICHTIG: Erfinde KEINE Daten. Nur was tatsächlich auf der Seite steht.
 
 Gib ein JSON-Array zurück. Jedes Event hat folgende Felder:
 - title (string): Name des Events
@@ -40,24 +42,6 @@ export async function extractEventsFromUrl(url: string): Promise<ExtractedEvent[
     throw new Error("Gemini API Key nicht konfiguriert. Bitte EXPO_GEMINI_API_KEY in .env setzen.");
   }
 
-  let pageContent: string;
-  try {
-    const response = await fetch(url, {
-      headers: { "User-Agent": "LNUP-Bot/1.0" },
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const html = await response.text();
-    pageContent = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .substring(0, 15000);
-  } catch (error: any) {
-    throw new Error(`Webseite konnte nicht geladen werden: ${error.message}`);
-  }
-
   const geminiResponse = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -66,10 +50,11 @@ export async function extractEventsFromUrl(url: string): Promise<ExtractedEvent[
         {
           parts: [
             { text: EXTRACTION_PROMPT },
-            { text: `URL: ${url}\n\nInhalt:\n${pageContent}` },
+            { text: `URL: ${url}` },
           ],
         },
       ],
+      tools: [{ google_search: {} }],
       generationConfig: {
         temperature: 0.1,
         maxOutputTokens: 4096,
@@ -115,6 +100,7 @@ export async function extractEventsFromText(text: string, sourceUrl?: string): P
           ],
         },
       ],
+      tools: [{ google_search: {} }],
       generationConfig: {
         temperature: 0.1,
         maxOutputTokens: 4096,

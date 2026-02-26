@@ -99,8 +99,8 @@ export default function ExtractEventScreen() {
         price_info: event.price_info || null,
         source_type: "ai_scraped",
         source_url: url.trim(),
-        created_by: user.id,
-        status: "pending_review",
+        created_by: null,
+        status: "active",
         ai_confidence: event.confidence,
       });
 
