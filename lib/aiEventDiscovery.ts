@@ -1,15 +1,10 @@
 import type { Event, EventCategory, Venue } from "@/types";
 import { GEMINI_API_KEY } from "./constants";
+import { geminiRequest, parseJsonArray } from "./geminiClient";
 
 function toTitleCase(str: string): string {
   return str.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
-
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-
-const MAX_RETRIES = 3;
-const BASE_DELAY_MS = 2000;
 
 const SEARCH_QUERIES = [
   "{city} events diese woche restaurant bar",
@@ -21,11 +16,27 @@ const SEARCH_QUERIES = [
   "{city} workshop kurs kreativ abend",
 ];
 
-const DISCOVERY_PROMPT = `Du bist ein Event-Scout für die Stadt {city} in Deutschland.
-Nutze die Google-Suche um ECHTE, AKTUELLE Events zu finden die in den nächsten 14 Tagen stattfinden.
+function buildSystemInstruction(city: string, today: string, endDate: string, weekday: string) {
+  return `Du bist ein erfahrener Event-Scout für die Stadt ${city} in Deutschland.
+Deine Aufgabe: Finde ECHTE, AKTUELLE Events die zwischen ${today} (${weekday}) und ${endDate} stattfinden.
 
-WICHTIG: Erfinde KEINE Events! Nur Events die du tatsächlich im Internet gefunden hast.
-Jedes Event MUSS eine echte source_url haben (die Webseite wo du das Event gefunden hast).
+REGELN:
+- Erfinde NIEMALS Events. Nur Events die du tatsächlich über die Google-Suche findest.
+- Jedes Event MUSS eine echte, funktionierende source_url haben.
+- Gib NUR Events zurück bei denen du dir sicher bist (confidence >= 0.7).
+
+NICHT zurückgeben:
+- Regelmäßige Öffnungszeiten von Restaurants/Bars (z.B. "Happy Hour jeden Freitag")
+- Dauerausstellungen in Museen
+- Events die bereits stattgefunden haben (vor ${today})
+- Erfundene oder vermutete Events
+
+KATEGORIEN: nightlife, food_drink, concert, festival, sports, art, family, other`;
+}
+
+function buildUserPrompt(city: string, today: string, searchQueries: string[]) {
+  return `Suche nach Events in ${city} mit folgenden Suchbegriffen:
+${searchQueries.join("\n")}
 
 Suche nach:
 - Themenabende in Restaurants, Weinproben
@@ -37,8 +48,6 @@ Suche nach:
 - Vereinsevents, lokale Feste
 - Sport-Events
 
-Heute ist ${new Date().toISOString().split("T")[0]}.
-
 Antwort als JSON-Array. Jedes Event:
 {
   "title": "Name des Events",
@@ -47,17 +56,19 @@ Antwort als JSON-Array. Jedes Event:
   "time_start": "HH:MM",
   "time_end": "HH:MM oder null",
   "venue_name": "Name der Location",
-  "venue_address": "Adresse",
-  "city": "${"{city}"}",
+  "venue_address": "Vollständige Adresse",
+  "city": "${city}",
   "category": "nightlife|food_drink|concert|festival|sports|art|family|other",
   "price_info": "z.B. 10€, Kostenlos, Ab 5€",
-  "source_url": "Die URL der Webseite wo du das Event gefunden hast (PFLICHT)",
+  "source_url": "URL der Webseite (PFLICHT)",
   "confidence": 0.0-1.0
 }
 
-Nur Events mit source_url und confidence >= 0.7 zurückgeben.
-Antworte NUR mit dem JSON-Array, kein anderer Text.
+BEISPIEL für ein korrektes Event:
+[{"title":"Pub Quiz Night","description":"Wöchentliches Pub Quiz mit Preisen. Teams bis 6 Personen.","date":"${today}","time_start":"20:00","time_end":"22:30","venue_name":"Irish Pub Downtown","venue_address":"Hauptstraße 12, ${city}","city":"${city}","category":"nightlife","price_info":"5€ pro Person","source_url":"https://example.com/events/pub-quiz","confidence":0.85}]
+
 Leeres Array [] wenn nichts gefunden.`;
+}
 
 interface DiscoveredEvent {
   title: string;
@@ -74,107 +85,59 @@ interface DiscoveredEvent {
   confidence: number;
 }
 
+const pendingCache = new Map<string, Event[]>();
+
+export function clearAiCache(city?: string) {
+  if (city) pendingCache.delete(city.toLowerCase());
+  else pendingCache.clear();
+}
+
+const WEEKDAYS = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+
 export async function discoverLocalEvents(city: string): Promise<Event[]> {
   if (!GEMINI_API_KEY) {
     throw new Error("Gemini API-Key fehlt. Bitte in .env konfigurieren.");
   }
 
-  const searchQueries = SEARCH_QUERIES.map((q) =>
-    q.replace("{city}", city)
-  );
+  const cacheKey = city.toLowerCase();
+  const cached = pendingCache.get(cacheKey);
+  if (cached) return cached;
 
-  const prompt = DISCOVERY_PROMPT.replace(/\{city\}/g, city);
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
+  const weekday = WEEKDAYS[now.getDay()];
+  const endDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
 
-  const requestBody = JSON.stringify({
+  const searchQueries = SEARCH_QUERIES.map((q) => q.replace("{city}", city));
+
+  const { text, groundingUrls } = await geminiRequest({
+    apiKey: GEMINI_API_KEY,
+    systemInstruction: {
+      parts: [{ text: buildSystemInstruction(city, today, endDate, weekday) }],
+    },
     contents: [
       {
-        parts: [
-          { text: prompt },
-          {
-            text: `Suchbegriffe für die Recherche:\n${searchQueries.join("\n")}`,
-          },
-        ],
+        parts: [{ text: buildUserPrompt(city, today, searchQueries) }],
       },
     ],
     tools: [{ google_search: {} }],
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: 8192,
-    },
+    temperature: 0.2,
+    maxOutputTokens: 8192,
   });
-
-  let response: Response | null = null;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: requestBody,
-    });
-
-    if (response.ok) break;
-
-    if (response.status === 429 && attempt < MAX_RETRIES) {
-      const delay = BASE_DELAY_MS * Math.pow(2, attempt);
-      console.warn(`Gemini 429 rate limit, retry ${attempt + 1}/${MAX_RETRIES} in ${delay}ms`);
-      await new Promise((r) => setTimeout(r, delay));
-      continue;
-    }
-
-    const body = await response.text().catch(() => "");
-    console.warn(`Gemini API error ${response.status}:`, body);
-
-    if (response.status === 429) {
-      throw new Error("Rate-Limit erreicht. Bitte warte eine Minute und versuche es erneut.");
-    }
-    throw new Error(`Gemini API Fehler (${response.status})`);
-  }
-
-  const result = await (response as Response).json();
-  let text =
-    result?.candidates?.[0]?.content?.parts
-      ?.map((p: any) => p.text ?? "")
-      .join("") ?? "";
 
   if (!text) {
     throw new Error("Gemini hat keine Antwort zurückgegeben.");
   }
 
-  text = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "");
+  const discovered = parseJsonArray<DiscoveredEvent>(text);
 
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) {
-    console.warn("AI Discovery: No JSON array in response:", text.substring(0, 200));
-    return [];
-  }
+  const groundingUrlSet = new Set(
+    groundingUrls.map((u) => normalizeUrl(u))
+  );
 
-  let jsonStr = jsonMatch[0];
-  let discovered: DiscoveredEvent[];
-  try {
-    discovered = JSON.parse(jsonStr);
-  } catch {
-    const lastComplete = jsonStr.lastIndexOf("},");
-    if (lastComplete > 0) {
-      jsonStr = jsonStr.substring(0, lastComplete + 1) + "]";
-      try {
-        discovered = JSON.parse(jsonStr);
-      } catch {
-        console.warn("AI Discovery: Failed to parse truncated JSON");
-        return [];
-      }
-    } else {
-      console.warn("AI Discovery: Failed to parse JSON:", jsonStr.substring(0, 200));
-      return [];
-    }
-  }
-
-  if (!Array.isArray(discovered)) return [];
-
-  const today = new Date().toISOString().split("T")[0];
-  const nextWeek = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split("T")[0];
-
-  return discovered
+  const events = discovered
     .filter(
       (e) =>
         e.title &&
@@ -184,8 +147,21 @@ export async function discoverLocalEvents(city: string): Promise<Event[]> {
         e.confidence >= 0.7 &&
         e.source_url &&
         e.date >= today &&
-        e.date <= nextWeek
+        e.date <= endDate
     )
+    .map((e) => {
+      if (e.source_url && groundingUrlSet.size > 0) {
+        const normalizedSource = normalizeUrl(e.source_url);
+        const isGrounded = [...groundingUrlSet].some(
+          (gUrl) => normalizedSource.includes(gUrl) || gUrl.includes(normalizedSource)
+        );
+        if (!isGrounded) {
+          e.confidence *= 0.85;
+        }
+      }
+      return e;
+    })
+    .filter((e) => e.confidence >= 0.7)
     .map((e, i): Event => {
       const venue: Venue = {
         id: `ai-venue-${city}-${i}-${Date.now()}`,
@@ -231,6 +207,18 @@ export async function discoverLocalEvents(city: string): Promise<Event[]> {
         photos_count: 0,
       };
     });
+
+  pendingCache.set(cacheKey, events);
+  return events;
+}
+
+function normalizeUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return u.hostname.replace(/^www\./, "") + u.pathname.replace(/\/+$/, "");
+  } catch {
+    return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/+$/, "");
+  }
 }
 
 const VALID_CATEGORIES: EventCategory[] = [

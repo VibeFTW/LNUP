@@ -2,6 +2,9 @@ import type { Event } from "@/types";
 import { fetchTicketmasterEvents } from "./ticketmaster";
 import { discoverLocalEvents } from "./aiEventDiscovery";
 import { TICKETMASTER_API_KEY, GEMINI_API_KEY } from "./constants";
+import { supabase } from "./supabase";
+
+const SCAN_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
 
 function normalizeForComparison(str: string): string {
   return str
@@ -118,24 +121,53 @@ function deduplicateEvents(events: Event[]): Event[] {
   return result;
 }
 
+async function shouldRunAiScan(city: string): Promise<boolean> {
+  if (!GEMINI_API_KEY || !city) return false;
+  try {
+    const { data } = await supabase
+      .from("cities")
+      .select("last_scanned")
+      .eq("name", city)
+      .maybeSingle();
+
+    if (!data?.last_scanned) return true;
+    return Date.now() - new Date(data.last_scanned).getTime() > SCAN_COOLDOWN_MS;
+  } catch {
+    return true;
+  }
+}
+
+async function markCityScanned(city: string): Promise<void> {
+  try {
+    await supabase
+      .from("cities")
+      .update({ last_scanned: new Date().toISOString() })
+      .eq("name", city);
+  } catch {
+    console.warn("Failed to update last_scanned for", city);
+  }
+}
+
 export async function fetchExternalEvents(city: string): Promise<Event[]> {
-  const apiResults = await Promise.allSettled([
+  const runAiScan = await shouldRunAiScan(city);
+
+  const [tmResult, aiResult] = await Promise.allSettled([
     fetchTicketmasterEvents(city, TICKETMASTER_API_KEY),
+    runAiScan ? discoverLocalEvents(city) : Promise.resolve([] as Event[]),
   ]);
 
-  const apiEvents: Event[] = [
-    ...(apiResults[0].status === "fulfilled" ? apiResults[0].value : []),
-  ];
+  const apiEvents = tmResult.status === "fulfilled" ? tmResult.value : [];
+  const aiEvents = aiResult.status === "fulfilled" ? aiResult.value : [];
 
-  // AI Discovery runs in parallel but is non-blocking —
-  // API results are returned immediately, AI results merged when ready
-  let aiEvents: Event[] = [];
-  if (GEMINI_API_KEY && city) {
-    try {
-      aiEvents = await discoverLocalEvents(city);
-    } catch {
-      console.warn("AI Discovery failed, continuing with API results");
-    }
+  if (tmResult.status === "rejected") {
+    console.warn("Ticketmaster fetch failed:", tmResult.reason);
+  }
+  if (aiResult.status === "rejected") {
+    console.warn("AI Discovery failed:", aiResult.reason);
+  }
+
+  if (runAiScan && aiEvents.length > 0) {
+    markCityScanned(city).catch(() => {});
   }
 
   const allEvents = [...apiEvents, ...aiEvents];

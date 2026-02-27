@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { Event, EventPhoto, EventMember } from "@/types";
 import { supabase } from "@/lib/supabase";
 import { fetchExternalEvents } from "@/lib/eventApis";
+import { clearAiCache } from "@/lib/aiEventDiscovery";
 import { TICKETMASTER_API_KEY } from "@/lib/constants";
 import { getRankForScore } from "@/lib/ranks";
 import { scheduleEventReminder, cancelScheduledNotification } from "@/lib/notifications";
@@ -23,6 +24,7 @@ async function persistExternalEvents(events: Event[]): Promise<void> {
 
 export async function persistAiEvents(events: Event[]): Promise<void> {
   await persistEventsToDb(events, ["ai_discovered", "ai_scraped"]);
+  clearAiCache();
 }
 
 async function persistEventsToDb(events: Event[], sourceTypes: string[]): Promise<void> {

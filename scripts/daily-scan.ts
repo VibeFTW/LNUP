@@ -9,18 +9,15 @@
  *   TICKETMASTER_API_KEY, GEMINI_API_KEY (optional)
  */
 
+import { geminiRequest, parseJsonArray } from "../lib/geminiClient";
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
 const TM_API_KEY = process.env.TICKETMASTER_API_KEY || process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY || "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY || "";
 
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const TM_BASE = "https://app.ticketmaster.com/discovery/v2/events.json";
 
-const CITY_TO_ENGLISH: Record<string, string> = {
-  "München": "Munich", "Köln": "Cologne", "Nürnberg": "Nuremberg",
-  "Hannover": "Hanover", "Braunschweig": "Brunswick",
-};
 const CITY_TO_GERMAN: Record<string, string> = {
   "Munich": "München", "Cologne": "Köln", "Nuremberg": "Nürnberg",
   "Hanover": "Hannover", "Brunswick": "Braunschweig",
@@ -253,6 +250,10 @@ async function scanCitiesWithAi(result: ScanResult) {
         });
         result.aiEventsPersisted++;
       }
+      await supabaseRequest(
+        `cities?name=eq.${encodeURIComponent(city.name)}`,
+        { method: "PATCH", body: JSON.stringify({ last_scanned: new Date().toISOString() }) }
+      ).catch(() => {});
     } catch (err: any) {
       const msg = `AI scan ${city.name}: ${err.message}`;
       console.warn(`  ${msg}`);
@@ -269,57 +270,58 @@ async function scanCitiesWithAi(result: ScanResult) {
   console.log(`  AI Found: ${result.aiEventsFound}, Persisted: ${result.aiEventsPersisted}`);
 }
 
-async function discoverEventsForCity(city: string, today: string): Promise<any[]> {
-  const prompt = `Du bist ein Event-Scout für die Stadt ${city} in Deutschland.
-Nutze die Google-Suche um ECHTE, AKTUELLE Events zu finden die in den nächsten 14 Tagen stattfinden (ab ${today}).
-WICHTIG: Erfinde KEINE Events! Nur Events die du im Internet gefunden hast. Jedes Event MUSS eine echte source_url haben.
+const WEEKDAYS = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-Suche nach: Themenabende, Bar-Events, Live-Musik, Flohmärkte, Comedy, Workshops, Sport-Events.
+async function discoverEventsForCity(city: string, today: string): Promise<any[]> {
+  const now = new Date();
+  const weekday = WEEKDAYS[now.getDay()];
+  const endDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+    .toISOString().split("T")[0];
+
+  const { text } = await geminiRequest({
+    apiKey: GEMINI_API_KEY,
+    systemInstruction: {
+      parts: [{
+        text: `Du bist ein erfahrener Event-Scout für die Stadt ${city} in Deutschland.
+Deine Aufgabe: Finde ECHTE, AKTUELLE Events die zwischen ${today} (${weekday}) und ${endDate} stattfinden.
+
+REGELN:
+- Erfinde NIEMALS Events. Nur Events die du tatsächlich über die Google-Suche findest.
+- Jedes Event MUSS eine echte, funktionierende source_url haben.
+- Gib NUR Events zurück bei denen du dir sicher bist (confidence >= 0.7).
+
+NICHT zurückgeben:
+- Regelmäßige Öffnungszeiten von Restaurants/Bars
+- Dauerausstellungen in Museen
+- Events die bereits stattgefunden haben (vor ${today})
+- Erfundene oder vermutete Events
+
+KATEGORIEN: nightlife, food_drink, concert, festival, sports, art, family, other`,
+      }],
+    },
+    contents: [{
+      parts: [{
+        text: `Suche nach Events in ${city}: Themenabende, Bar-Events, Live-Musik, Flohmärkte, Comedy, Workshops, Sport-Events.
 
 Antwort als JSON-Array:
 [{"title":"...","description":"...","date":"YYYY-MM-DD","time_start":"HH:MM","time_end":"HH:MM oder null","venue_name":"...","venue_address":"...","category":"nightlife|food_drink|concert|festival|sports|art|family|other","price_info":"...","source_url":"URL der Quelle (PFLICHT)","confidence":0.0-1.0}]
 
-Nur Events mit source_url und confidence >= 0.7. Antworte NUR mit dem JSON-Array.`;
-
-  const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      tools: [{ google_search: {} }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
-    }),
+Leeres Array [] wenn nichts gefunden.`,
+      }],
+    }],
+    tools: [{ google_search: {} }],
+    temperature: 0.2,
+    maxOutputTokens: 8192,
   });
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Gemini ${res.status}: ${body.substring(0, 200)}`);
-  }
+  const events = parseJsonArray<any>(text);
 
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts
-    ?.map((p: any) => p.text ?? "")
-    .join("") ?? "";
-
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) return [];
-
-  try {
-    const events = JSON.parse(jsonMatch[0]);
-    if (!Array.isArray(events)) return [];
-
-    const nextTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-      .toISOString().split("T")[0];
-
-    return events.filter(
-      (e: any) => e.title && e.date && e.time_start && e.venue_name
-        && e.source_url
-        && e.confidence >= 0.7
-        && e.date >= today && e.date <= nextTwoWeeks
-    );
-  } catch {
-    return [];
-  }
+  return events.filter(
+    (e: any) => e.title && e.date && e.time_start && e.venue_name
+      && e.source_url
+      && e.confidence >= 0.7
+      && e.date >= today && e.date <= endDate
+  );
 }
 
 // Step 3: Archive past events

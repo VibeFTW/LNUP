@@ -475,6 +475,7 @@ CREATE TABLE public.cities (
   lng DOUBLE PRECISION,
   active BOOLEAN NOT NULL DEFAULT true,
   scan_enabled BOOLEAN NOT NULL DEFAULT false,
+  last_scanned TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
