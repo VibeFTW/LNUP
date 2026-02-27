@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "scan": "npx tsx scripts/daily-scan.ts"
+    "scan": "npx tsx scripts/daily-scan.ts",
+    "test:discovery": "tsx scripts/test-discovery.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.4",

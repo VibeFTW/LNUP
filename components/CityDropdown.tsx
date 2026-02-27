@@ -92,10 +92,8 @@ export function CityDropdown({ visible, onClose }: CityDropdownProps) {
     onClose();
   };
 
-  const handleAiDiscover = async () => {
-    const cityName = toTitleCase(search.trim());
+  const runDiscoveryForCity = async (cityName: string, setAsSelected: boolean) => {
     if (!cityName || isDiscovering) return;
-
     setIsDiscovering(true);
     try {
       const discovered = await discoverLocalEvents(cityName);
@@ -110,8 +108,10 @@ export function CityDropdown({ visible, onClose }: CityDropdownProps) {
           `${discovered.length} Events in ${cityName} gefunden & gespeichert!`,
           "success"
         );
-        setCity(cityName);
-        setSearch("");
+        if (setAsSelected) {
+          setCity(cityName);
+          setSearch("");
+        }
         onClose();
       } else {
         useToastStore.getState().showToast(
@@ -126,6 +126,14 @@ export function CityDropdown({ visible, onClose }: CityDropdownProps) {
     } finally {
       setIsDiscovering(false);
     }
+  };
+
+  const handleAiDiscover = () => {
+    runDiscoveryForCity(toTitleCase(search.trim()), true);
+  };
+
+  const handleDiscoverCurrentCity = () => {
+    if (city) runDiscoveryForCity(city, false);
   };
 
   const searchNotInList = search.trim().length >= 3 &&
@@ -237,6 +245,22 @@ export function CityDropdown({ visible, onClose }: CityDropdownProps) {
             )}
             <Text className="text-xs font-semibold text-primary">
               {isDiscovering ? `Suche in ${search.trim()}...` : `"${search.trim()}" mit KI entdecken`}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {!searchNotInList && city && (
+          <TouchableOpacity
+            onPress={handleDiscoverCurrentCity}
+            disabled={isDiscovering}
+            className="mx-3 mb-3 mt-1 flex-row items-center justify-center gap-2 bg-primary/10 border border-primary/30 rounded-lg py-2.5"
+          >
+            {isDiscovering ? (
+              <ActivityIndicator color="#6C5CE7" size="small" />
+            ) : (
+              <Ionicons name="sparkles" size={14} color="#6C5CE7" />
+            )}
+            <Text className="text-xs font-semibold text-primary">
+              {isDiscovering ? `Suche in ${city}…` : `Mit KI in ${city} suchen`}
             </Text>
           </TouchableOpacity>
         )}

@@ -14,6 +14,9 @@ const SEARCH_QUERIES = [
   "{city} live musik kneipe bar club",
   "{city} flohmarkt markt straßenfest",
   "{city} workshop kurs kreativ abend",
+  "{city} club bar Instagram events Termine",
+  "{city} Instagram Location events Party Konzert",
+  "site:instagram.com {city} club Party Event",
 ];
 
 function buildSystemInstruction(city: string, today: string, endDate: string, weekday: string) {
@@ -22,7 +25,8 @@ Deine Aufgabe: Finde ECHTE, AKTUELLE Events die zwischen ${today} (${weekday}) u
 
 REGELN:
 - Erfinde NIEMALS Events. Nur Events die du tatsächlich über die Google-Suche findest.
-- Jedes Event MUSS eine echte, funktionierende source_url haben.
+- Jedes Event MUSS eine echte, funktionierende source_url haben (Webseite ODER Instagram-Beitrag/Seite).
+- Suche auch gezielt auf Instagram: Clubs, Bars und Locations posten dort oft ihre Events. Instagram-URLs (instagram.com/...) sind als source_url erlaubt.
 - Gib NUR Events zurück bei denen du dir sicher bist (confidence >= 0.7).
 
 NICHT zurückgeben:
@@ -41,7 +45,8 @@ ${searchQueries.join("\n")}
 Suche nach:
 - Themenabende in Restaurants, Weinproben
 - Bar-Events (Pub Quiz, Karaoke, Open Mic, DJ-Abende)
-- Lokale Live-Musik in Kneipen/Bars
+- Lokale Live-Musik in Kneipen/Bars, Club-Events
+- Instagram-Posts und -Seiten von Clubs, Bars und Locations in ${city} (dort werden oft Events angekündigt)
 - Flohmärkte, Kunstmärkte, Straßenfeste
 - Comedy-Abende, Poetry Slams
 - Workshops, Kurse
@@ -60,12 +65,13 @@ Antwort als JSON-Array. Jedes Event:
   "city": "${city}",
   "category": "nightlife|food_drink|concert|festival|sports|art|family|other",
   "price_info": "z.B. 10€, Kostenlos, Ab 5€",
-  "source_url": "URL der Webseite (PFLICHT)",
+  "source_url": "URL der Webseite oder des Instagram-Posts (PFLICHT). Instagram z.B. https://www.instagram.com/p/... oder https://instagram.com/username/",
   "confidence": 0.0-1.0
 }
 
-BEISPIEL für ein korrektes Event:
+BEISPIEL für ein korrektes Event (Webseite):
 [{"title":"Pub Quiz Night","description":"Wöchentliches Pub Quiz mit Preisen. Teams bis 6 Personen.","date":"${today}","time_start":"20:00","time_end":"22:30","venue_name":"Irish Pub Downtown","venue_address":"Hauptstraße 12, ${city}","city":"${city}","category":"nightlife","price_info":"5€ pro Person","source_url":"https://example.com/events/pub-quiz","confidence":0.85}]
+BEISPIEL mit Instagram-Quelle: source_url kann auch "https://www.instagram.com/p/ABC123/" oder die Instagram-Seite einer Location sein.
 
 Leeres Array [] wenn nichts gefunden.`;
 }

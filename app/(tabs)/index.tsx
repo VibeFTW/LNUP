@@ -1,4 +1,4 @@
-import { View, Text, FlatList, RefreshControl, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, RefreshControl, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,10 +11,12 @@ import { CityDropdown } from "@/components/CityDropdown";
 import { SearchOverlay } from "@/components/SearchOverlay";
 import { SortDropdown } from "@/components/SortDropdown";
 import { TrendingEvents } from "@/components/TrendingEvents";
-import { useEventStore } from "@/stores/eventStore";
+import { useEventStore, persistAiEvents } from "@/stores/eventStore";
 import { useFilterStore } from "@/stores/filterStore";
+import { useToastStore } from "@/stores/toastStore";
 import { matchesDateFilter } from "@/lib/utils";
 import { COLORS } from "@/lib/constants";
+import { discoverLocalEvents } from "@/lib/aiEventDiscovery";
 import type { EventCategory } from "@/types";
 
 export default function FeedScreen() {
@@ -30,6 +32,8 @@ export default function FeedScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
   const [cityDropdownVisible, setCityDropdownVisible] = useState(false);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const mergeExternalEvents = useEventStore((s) => s.mergeExternalEvents);
 
   useEffect(() => {
     if (!hasFetched) {
@@ -90,6 +94,37 @@ export default function FeedScreen() {
     await fetchEvents(city || undefined, true);
     setRefreshing(false);
   }, [fetchEvents, city]);
+
+  const handleDiscoverInCity = useCallback(async () => {
+    if (!city || isDiscovering) return;
+    setIsDiscovering(true);
+    try {
+      const discovered = await discoverLocalEvents(city);
+      if (discovered.length > 0) {
+        mergeExternalEvents(discovered);
+        await persistAiEvents(discovered);
+        useToastStore.getState().showToast(
+          `${discovered.length} Events in ${city} gefunden & gespeichert!`,
+          "success"
+        );
+        await fetchEvents(city, true);
+      } else {
+        useToastStore.getState().showToast(
+          `Keine neuen Events in ${city} gefunden.`,
+          "info"
+        );
+      }
+    } catch (err: any) {
+      useToastStore.getState().showToast(
+        err?.message ?? "KI-Suche fehlgeschlagen.",
+        "error"
+      );
+    } finally {
+      setIsDiscovering(false);
+    }
+  }, [city, isDiscovering, mergeExternalEvents, fetchEvents]);
+
+  const showDiscoverButton = city && !isLoading && filteredEvents.length === 0;
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -176,9 +211,27 @@ export default function FeedScreen() {
                 <Text className="text-lg font-semibold text-text-primary text-center mb-2">
                   Keine Events gefunden
                 </Text>
-                <Text className="text-sm text-text-secondary text-center">
-                  Versuch andere Filter oder schau später nochmal vorbei.
+                <Text className="text-sm text-text-secondary text-center mb-6">
+                  {showDiscoverButton
+                    ? `Noch keine Events für ${city}. Lass die KI nach Events suchen.`
+                    : "Versuch andere Filter oder schau später nochmal vorbei."}
                 </Text>
+                {showDiscoverButton && (
+                  <TouchableOpacity
+                    onPress={handleDiscoverInCity}
+                    disabled={isDiscovering}
+                    className="flex-row items-center justify-center gap-2 bg-primary/20 border border-primary/40 rounded-xl px-5 py-3"
+                  >
+                    {isDiscovering ? (
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                    ) : (
+                      <Ionicons name="sparkles" size={18} color={COLORS.primary} />
+                    )}
+                    <Text className="text-sm font-semibold text-primary">
+                      {isDiscovering ? `Suche in ${city}…` : `Mit KI in ${city} suchen`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )
           }

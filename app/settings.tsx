@@ -143,6 +143,7 @@ export default function SettingsScreen() {
 
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const [email, setEmail] = useState("—");
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -151,8 +152,16 @@ export default function SettingsScreen() {
   }, []);
 
   const handleLogout = async () => {
-    await logout();
-    router.replace("/(auth)/login");
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await logout();
+      router.replace("/(auth)/login");
+    } catch (e: any) {
+      Alert.alert("Abmeldung fehlgeschlagen", e?.message ?? "Bitte erneut versuchen.");
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -296,7 +305,7 @@ export default function SettingsScreen() {
         <SettingsSection title="Gefahrenzone">
           <SettingsRow
             icon="log-out-outline"
-            label="Abmelden"
+            label={loggingOut ? "Wird abgemeldet…" : "Abmelden"}
             danger
             onPress={handleLogout}
           />

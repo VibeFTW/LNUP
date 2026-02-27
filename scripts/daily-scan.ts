@@ -287,7 +287,8 @@ Deine Aufgabe: Finde ECHTE, AKTUELLE Events die zwischen ${today} (${weekday}) u
 
 REGELN:
 - Erfinde NIEMALS Events. Nur Events die du tatsächlich über die Google-Suche findest.
-- Jedes Event MUSS eine echte, funktionierende source_url haben.
+- Jedes Event MUSS eine echte, funktionierende source_url haben (Webseite ODER Instagram-Beitrag/Seite).
+- Suche auch gezielt auf Instagram: Clubs, Bars und Locations posten dort oft ihre Events. Instagram-URLs (instagram.com/...) sind als source_url erlaubt.
 - Gib NUR Events zurück bei denen du dir sicher bist (confidence >= 0.7).
 
 NICHT zurückgeben:
@@ -301,7 +302,7 @@ KATEGORIEN: nightlife, food_drink, concert, festival, sports, art, family, other
     },
     contents: [{
       parts: [{
-        text: `Suche nach Events in ${city}: Themenabende, Bar-Events, Live-Musik, Flohmärkte, Comedy, Workshops, Sport-Events.
+        text: `Suche nach Events in ${city}: Themenabende, Bar-Events, Live-Musik, Club-Events, Flohmärkte, Comedy, Workshops, Sport-Events. Suche auch auf Instagram nach Event-Ankündigungen von Clubs, Bars und Locations.
 
 Antwort als JSON-Array:
 [{"title":"...","description":"...","date":"YYYY-MM-DD","time_start":"HH:MM","time_end":"HH:MM oder null","venue_name":"...","venue_address":"...","category":"nightlife|food_drink|concert|festival|sports|art|family|other","price_info":"...","source_url":"URL der Quelle (PFLICHT)","confidence":0.0-1.0}]
