@@ -240,7 +240,11 @@ export async function discoverLocalEvents(city: string): Promise<Event[]> {
       };
     });
 
-  pendingCache.set(cacheKey, events);
+  // Nur cachen wenn Events gefunden – leere Ergebnisse nicht cachen,
+  // damit eine erneute Suche Gemini nochmal fragt.
+  if (events.length > 0) {
+    pendingCache.set(cacheKey, events);
+  }
   return events;
 }
 
