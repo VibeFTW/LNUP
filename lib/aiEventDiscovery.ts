@@ -26,7 +26,14 @@ function buildSystemInstruction(city: string, today: string, endDate: string, we
     ? `\n\nWICHTIGE QUELLEN – Durchsuche diese Webseiten gezielt nach Events:\n${sources.websites.map((u) => `- ${u}`).join("\n")}`
     : "";
   const instaList = sources.instagram.length > 0
-    ? `\n\nWICHTIGE INSTAGRAM-ACCOUNTS – Suche auf diesen Accounts nach Event-Ankündigungen:\n${sources.instagram.map((h) => `- https://www.instagram.com/${h}/`).join("\n")}`
+    ? `\n\nWICHTIGE INSTAGRAM-ACCOUNTS – Durchsuche diese Accounts GRÜNDLICH nach Events:
+${sources.instagram.map((h) => `- https://www.instagram.com/${h}/`).join("\n")}
+
+So gehst du bei jedem Instagram-Account vor:
+1. Öffne die Profilseite und lies die BIOGRAPHIE – Clubs/Bars schreiben dort oft das nächste Event (Datum, Name, Uhrzeit).
+2. Schau dir die neuesten POSTS und REELS an – Event-Ankündigungen mit Datum, Flyer, Beschreibungen.
+3. Wenn in der Bio oder Posts ein Event mit Datum erwähnt wird, suche weitere Details (Adresse, Preis, Uhrzeit) auf der verlinkten Webseite oder über Google.
+4. Die source_url kann der Instagram-Post, das Profil ODER eine verlinkte Webseite sein.`
     : "";
 
   return `Du bist ein erfahrener Event-Scout für die Stadt ${city} in Deutschland.
@@ -59,7 +66,7 @@ Suche nach:
 - Themenabende in Restaurants, Weinproben
 - Bar-Events (Pub Quiz, Karaoke, Open Mic, DJ-Abende)
 - Lokale Live-Musik in Kneipen/Bars, Club-Events
-- Instagram-Posts und -Seiten von Clubs, Bars und Locations in ${city} (dort werden oft Events angekündigt)
+- Instagram-Profile von Clubs/Bars: Lies die BIO (dort steht oft das nächste Event!) und die neuesten Posts/Reels
 - Flohmärkte, Kunstmärkte, Straßenfeste
 - Comedy-Abende, Poetry Slams
 - Workshops, Kurse
@@ -134,7 +141,10 @@ export async function discoverLocalEvents(city: string): Promise<Event[]> {
   const sources = getSourcesForCity(city);
   const baseQueries = SEARCH_QUERIES.map((q) => q.replace("{city}", city));
   const sourceQueries = sources.websites.map((url) => `site:${new URL(url).hostname} events veranstaltungen`);
-  const instaQueries = sources.instagram.map((handle) => `site:instagram.com ${handle} event`);
+  const instaQueries = sources.instagram.flatMap((handle) => [
+    `site:instagram.com ${handle}`,
+    `instagram.com/${handle} event party`,
+  ]);
   const searchQueries = [...baseQueries, ...sourceQueries, ...instaQueries];
 
   const { text, groundingUrls } = await geminiRequest({
