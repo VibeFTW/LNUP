@@ -67,6 +67,8 @@ export default function LoginScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete={Platform.OS === "web" ? "email" : undefined}
+            returnKeyType="next"
+            blurOnSubmit={false}
             className="bg-card border border-border rounded-xl px-4 py-3.5 text-text-primary text-base"
           />
         </View>
@@ -82,6 +84,8 @@ export default function LoginScreen() {
             placeholderTextColor={COLORS.textMuted}
             secureTextEntry
             autoComplete={Platform.OS === "web" ? "current-password" : undefined}
+            returnKeyType="go"
+            onSubmitEditing={handleLogin}
             className="bg-card border border-border rounded-xl px-4 py-3.5 text-text-primary text-base"
           />
         </View>
