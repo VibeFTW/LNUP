@@ -58,3 +58,21 @@ export function truncate(str: string, maxLength: number): string {
   if (!str || str.length <= maxLength) return str ?? "";
   return str.substring(0, maxLength - 3) + "...";
 }
+
+export function isPastEvent(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [y, m, d] = dateStr.split("-").map(Number);
+    if (!y || !m || !d) return false;
+    const eventDay = new Date(y, m - 1, d);
+    return eventDay < today;
+  } catch {
+    return false;
+  }
+}
+
+export function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}

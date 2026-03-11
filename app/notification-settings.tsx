@@ -73,62 +73,80 @@ export default function NotificationSettingsScreen() {
       return;
     }
 
-    const { data } = await supabase
-      .from("notification_preferences")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    try {
+      const { data } = await supabase
+        .from("notification_preferences")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    if (data) {
-      setPrefs({
-        event_reminders: data.event_reminders,
-        new_events_city: data.new_events_city,
-        event_updates: data.event_updates,
-        post_event_confirm: data.post_event_confirm,
-      });
+      if (data) {
+        setPrefs({
+          event_reminders: data.event_reminders,
+          new_events_city: data.new_events_city,
+          event_updates: data.event_updates,
+          post_event_confirm: data.post_event_confirm,
+        });
+      }
+
+      const { data: tokenData } = await supabase
+        .from("push_tokens")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
+
+      setPushEnabled((tokenData?.length ?? 0) > 0);
+    } catch (e) {
+      console.warn("loadPreferences error:", e);
+      useToastStore.getState().showToast("Einstellungen konnten nicht geladen werden.", "error");
+    } finally {
+      setIsLoading(false);
     }
-
-    const { data: tokenData } = await supabase
-      .from("push_tokens")
-      .select("id")
-      .eq("user_id", user.id)
-      .limit(1);
-
-    setPushEnabled((tokenData?.length ?? 0) > 0);
-    setIsLoading(false);
   }
 
   async function updatePref(key: keyof Preferences, value: boolean) {
+    const previous = { ...prefs };
     const updated = { ...prefs, [key]: value };
     setPrefs(updated);
 
     if (!user) return;
 
-    await supabase.from("notification_preferences").upsert(
+    const { error } = await supabase.from("notification_preferences").upsert(
       { user_id: user.id, ...updated, updated_at: new Date().toISOString() },
       { onConflict: "user_id" }
     );
+
+    if (error) {
+      console.warn("updatePref error:", error.message);
+      setPrefs(previous);
+      useToastStore.getState().showToast("Einstellung konnte nicht gespeichert werden.", "error");
+    }
   }
 
   async function handleTogglePush() {
     if (!user) return;
 
-    if (pushEnabled) {
-      await supabase
-        .from("push_tokens")
-        .delete()
-        .eq("user_id", user.id);
-      setPushEnabled(false);
-      useToastStore.getState().showToast("Push-Benachrichtigungen deaktiviert.", "info");
-    } else {
-      const token = await registerForPushNotifications();
-      if (token) {
-        await savePushToken(token);
-        setPushEnabled(true);
-        useToastStore.getState().showToast("Push-Benachrichtigungen aktiviert!", "success");
+    try {
+      if (pushEnabled) {
+        await supabase
+          .from("push_tokens")
+          .delete()
+          .eq("user_id", user.id);
+        setPushEnabled(false);
+        useToastStore.getState().showToast("Push-Benachrichtigungen deaktiviert.", "info");
       } else {
-        useToastStore.getState().showToast("Benachrichtigungen nicht erlaubt. Prüfe deine Geräteeinstellungen.", "error");
+        const token = await registerForPushNotifications();
+        if (token) {
+          await savePushToken(token);
+          setPushEnabled(true);
+          useToastStore.getState().showToast("Push-Benachrichtigungen aktiviert!", "success");
+        } else {
+          useToastStore.getState().showToast("Benachrichtigungen nicht erlaubt. Prüfe deine Geräteeinstellungen.", "error");
+        }
       }
+    } catch (e) {
+      console.warn("handleTogglePush error:", e);
+      useToastStore.getState().showToast("Fehler bei Push-Einstellungen.", "error");
     }
   }
 

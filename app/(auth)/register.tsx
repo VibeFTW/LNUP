@@ -32,19 +32,38 @@ export default function RegisterScreen() {
       showToast("Bitte alle Felder ausfüllen.", "error");
       return;
     }
-    if (password !== confirmPassword) {
-      showToast("Passwörter stimmen nicht überein.", "error");
+    const trimmedUsername = username.trim();
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 30) {
+      showToast("Benutzername muss 3–30 Zeichen lang sein.", "error");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_.-]+$/.test(trimmedUsername)) {
+      showToast("Benutzername: Nur Buchstaben, Zahlen, _ . - erlaubt.", "error");
+      return;
+    }
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      showToast("Bitte eine gültige E-Mail-Adresse eingeben.", "error");
       return;
     }
     if (password.length < 6) {
       showToast("Passwort muss mindestens 6 Zeichen lang sein.", "error");
       return;
     }
+    if (password !== confirmPassword) {
+      showToast("Passwörter stimmen nicht überein.", "error");
+      return;
+    }
     try {
-      await register(email, password, username);
+      await register(trimmedEmail, password, trimmedUsername);
       router.replace("/(tabs)");
-    } catch {
-      showToast("Registrierung fehlgeschlagen.", "error");
+    } catch (e: any) {
+      const msg = e?.message?.includes("already registered")
+        ? "Diese E-Mail ist bereits registriert."
+        : e?.message?.includes("username")
+          ? "Dieser Benutzername ist bereits vergeben."
+          : e?.message ?? "Registrierung fehlgeschlagen.";
+      showToast(msg, "error");
     }
   };
 

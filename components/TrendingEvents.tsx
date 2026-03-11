@@ -12,7 +12,9 @@ interface TrendingEventsProps {
 export function TrendingEvents({ events }: TrendingEventsProps) {
   const router = useRouter();
 
+  const today = new Date().toISOString().split("T")[0];
   const top3 = [...events]
+    .filter((e) => (e.event_date ?? "") >= today)
     .sort((a, b) => b.going_count - a.going_count)
     .slice(0, 3);
 
@@ -62,7 +64,7 @@ export function TrendingEvents({ events }: TrendingEventsProps) {
                   {event.title}
                 </Text>
                 <Text className="text-xs text-white/70" numberOfLines={1}>
-                  {event.venue?.name} · {formatEventDate(event.event_date)} · {formatTime(event.time_start)}
+                  {event.venue?.name ?? "Unbekannt"} · {formatEventDate(event.event_date)} · {formatTime(event.time_start)}
                 </Text>
               </View>
             </TouchableOpacity>

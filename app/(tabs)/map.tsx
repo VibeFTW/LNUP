@@ -8,7 +8,7 @@ import { useEventStore } from "@/stores/eventStore";
 import { useFilterStore } from "@/stores/filterStore";
 import { REGION_CENTER, GOOGLE_MAPS_API_KEY, COLORS } from "@/lib/constants";
 import { useThemeStore } from "@/stores/themeStore";
-import { matchesDateFilter } from "@/lib/utils";
+import { matchesDateFilter, formatEventDate, formatTime } from "@/lib/utils";
 import { CitySelector } from "@/components/CitySelector";
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -109,10 +109,10 @@ export default function MapScreen() {
                   {event.title}
                 </Text>
                 <Text style={{ fontSize: 12, color: "#666", marginBottom: 2 }}>
-                  {event.venue?.name}
+                  {event.venue?.name ?? "Unbekannt"}
                 </Text>
                 <Text style={{ fontSize: 11, color: "#999" }}>
-                  {event.event_date} · {event.time_start}
+                  {formatEventDate(event.event_date)} · {formatTime(event.time_start)}
                 </Text>
               </View>
             </Callout>
