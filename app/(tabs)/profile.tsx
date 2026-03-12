@@ -19,6 +19,7 @@ export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const isAuthLoading = useAuthStore((s) => s.isLoading);
   const getEventsByCreator = useEventStore((s) => s.getEventsByCreator);
+  const getGoingEvents = useEventStore((s) => s.getGoingEvents);
   const isDark = useThemeStore((s) => s.isDark);
   const setThemeMode = useThemeStore((s) => s.setMode);
   const [attendedEvents, setAttendedEvents] = useState<Event[]>([]);
@@ -97,6 +98,7 @@ export default function ProfileScreen() {
   const nextRank = getNextRank(rank.id);
   const progress = getProgressToNextRank(user.trust_score);
   const myEvents = getEventsByCreator(user.id);
+  const goingEvents = getGoingEvents();
 
   const today = new Date().toISOString().split("T")[0];
   const activeHosted = myEvents.filter((e) => e.event_date >= today);
@@ -245,6 +247,25 @@ export default function ProfileScreen() {
           </View>
         )}
       </View>
+
+      {/* Bin dabei (upcoming) */}
+      {goingEvents.length > 0 && (
+        <View className="mx-4 mb-6">
+          <Text className="text-sm font-semibold text-text-primary mb-3">
+            Bin dabei ({goingEvents.length})
+          </Text>
+          <View className="gap-2">
+            {goingEvents.slice(0, 5).map((event) => (
+              <EventRow key={event.id} event={event} onPress={() => router.push(`/event/${event.id}`)} />
+            ))}
+            {goingEvents.length > 5 && (
+              <Text className="text-xs text-text-muted text-center py-1">
+                +{goingEvents.length - 5} weitere
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* Dabei gewesen */}
       <View className="mx-4 mb-6">

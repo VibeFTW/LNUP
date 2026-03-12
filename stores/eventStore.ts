@@ -166,6 +166,7 @@ interface EventState {
   mergeExternalEvents: (externalEvents: Event[]) => void;
   getEventById: (id: string) => Event | undefined;
   getSavedEvents: () => Event[];
+  getGoingEvents: () => Event[];
   getEventsByCreator: (userId: string) => Event[];
   getPhotosForEvent: (eventId: string) => EventPhoto[];
   getPendingPhotosForEvent: (eventId: string) => EventPhoto[];
@@ -578,6 +579,14 @@ export const useEventStore = create<EventState>((set, get) => ({
   getSavedEvents: () => {
     const { events, savedEventIds } = get();
     return events.filter((e) => savedEventIds.has(e.id));
+  },
+
+  getGoingEvents: () => {
+    const { events, goingEventIds } = get();
+    const today = new Date().toISOString().split("T")[0];
+    return events
+      .filter((e) => goingEventIds.has(e.id) && (e.event_date ?? "") >= today)
+      .sort((a, b) => a.event_date.localeCompare(b.event_date));
   },
 
   getEventsByCreator: (userId) => {

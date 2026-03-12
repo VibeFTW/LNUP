@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { View, Text } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,8 +14,9 @@ interface EventCoverProps {
 export function EventCover({ category, imageUrl, size = "card" }: EventCoverProps) {
   const [colorStart] = getCategoryGradient(category);
   const isDetail = size === "detail";
+  const [imgError, setImgError] = useState(false);
 
-  if (imageUrl) {
+  if (imageUrl && !imgError) {
     return (
       <View style={{ backgroundColor: colorStart }}>
         <View style={{ aspectRatio: isDetail ? 16 / 9 : 3, maxHeight: isDetail ? 240 : 140 }}>
@@ -23,6 +25,7 @@ export function EventCover({ category, imageUrl, size = "card" }: EventCoverProp
             style={{ width: "100%", height: "100%" }}
             contentFit="cover"
             transition={200}
+            onError={() => setImgError(true)}
           />
         </View>
         <View

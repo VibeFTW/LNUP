@@ -201,7 +201,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
 
   const tabs: { id: SearchTab; label: string }[] = [
     { id: "events", label: "Events" },
-    { id: "venues", label: "Venues" },
+    { id: "venues", label: "Orte" },
     { id: "users", label: "Nutzer" },
   ];
 
@@ -287,7 +287,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
             contentContainerStyle={{ paddingBottom: 40 }}
             ListEmptyComponent={
               <View className="items-center py-12">
-                <Text className="text-sm text-text-muted">Keine Venues gefunden</Text>
+                <Text className="text-sm text-text-muted">Keine Orte gefunden</Text>
               </View>
             }
           />
