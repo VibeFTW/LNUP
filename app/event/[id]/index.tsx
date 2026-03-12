@@ -60,7 +60,7 @@ export default function EventDetailScreen() {
   }, [fetchEvents, fetchPhotosForEvent, id]);
 
   useEffect(() => {
-    if (id) fetchPhotosForEvent(id).catch(() => {});
+    if (id) fetchPhotosForEvent(id).catch((e) => { if (__DEV__) console.warn('fetchPhotosForEvent failed:', e); });
   }, [id]);
 
   useEffect(() => {
